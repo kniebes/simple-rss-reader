@@ -1,0 +1,9 @@
+/vendor/
+
+/var/posts.db
+/var/posts.db-shm
+/var/posts.db-wal
+
+.DS_Store
+.idea/
+.vscode/

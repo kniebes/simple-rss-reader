@@ -1,0 +1,17 @@
+{
+    "name": "kniebes/simple-rss-reader",
+    "description": "Simple RSS Reader",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Kniebes\\SimpleRssReader\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Markus Kniebes",
+            "email": "m@kniebes.io"
+        }
+    ],
+    "require": {}
+}
