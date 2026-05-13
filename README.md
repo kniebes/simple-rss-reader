@@ -30,6 +30,11 @@ Für die Klassifizierung ein Anthropic-API-Key in `.env` ablegen:
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
+Geladen wird via `symfony/dotenv` (`Dotenv::loadEnv()`); `.env.local` überschreibt
+`.env` (sinnvoll für das echte Secret, während `.env` als gitignored/getrackter
+Template-Platzhalter dient), und ein im Shell gesetztes `ANTHROPIC_API_KEY`
+schlägt beides.
+
 ## Verwendung
 
 **Feeds laden / aktualisieren** (CLI, idempotent):
@@ -97,7 +102,10 @@ CREATE TABLE posts (
     date      TEXT NOT NULL,                          -- ISO 8601
     feed_url  TEXT NOT NULL,
     blog_url  TEXT NOT NULL,
-    permalink TEXT NOT NULL UNIQUE,
+    guid      TEXT NOT NULL UNIQUE,                   -- Dedup-Key: RSS <guid> / Atom <id>,
+                                                      -- Fallback <link> wenn keiner gesetzt
+    permalink TEXT NULL,                              -- URL zum Anzeigen — NULL wenn Feed
+                                                      -- keinen Link liefert (z. B. rss-club)
     title     TEXT NOT NULL,
     content   TEXT NOT NULL DEFAULT '',
     status    TEXT NOT NULL DEFAULT 'new'
@@ -123,3 +131,9 @@ CREATE INDEX idx_posts_category   ON posts(category);
 - **`categorize.php` bricht bei API-Fehlern hart ab** (`exit 2`), damit der
   nächste Lauf denselben Batch retried. Kein partielles Persistieren mitten im
   Batch.
+- **Einmalige Duplikat-Welle bei der `guid`-Migration.** Bestandsposts werden
+  mit `guid = permalink` gebackfillt. Bei Feeds, deren `<guid>` ≠ `<link>` ist
+  (z. B. WordPress mit `<guid isPermaLink="false">…?p=123</guid>`), erscheint
+  der nächste Fetch jedem solchen Item ein zweites Mal — alter Row mit
+  `guid=link`, neuer Row mit dem echten Feed-Guid. Die Retention räumt das
+  innerhalb von 5 Tagen auf; ggf. einmalig „Alle als gelesen markieren" klicken.

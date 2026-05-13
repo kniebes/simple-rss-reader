@@ -6,11 +6,18 @@ use Kniebes\SimpleRssReader\Category\CategoryList;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
 use Kniebes\SimpleRssReader\Util\Text;
+use Symfony\Component\Dotenv\Dotenv;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $projectRoot = dirname(__DIR__);
-$repository = new PostRepository(Database::open($projectRoot . '/var/posts.db'));
+
+$envFile = $projectRoot . '/.env';
+if (is_file($envFile)) {
+    (new Dotenv())->loadEnv($envFile);
+}
+
+$repository = new PostRepository(Database::open());
 $categories = CategoryList::fromFile($projectRoot . '/var/categories.md');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'mark_all_read') {
@@ -106,16 +113,25 @@ function e(string $s): string {
                     <?php foreach ($section['posts'] as $post): ?>
                         <li>
                             <div class="<?= $post['status'] === 'new' ? 'new' : '' ?>">
-                                <a href="<?= e($post['permalink']) ?>" target="_blank" rel="noopener">
-                                    <?= e($post['title'] !== '' ? $post['title'] : $post['permalink']) ?>
-                                </a>
+                                <?php
+                                $label = $post['title'] !== ''
+                                    ? $post['title']
+                                    : ($post['permalink'] ?? $post['blog_url']);
+                                ?>
+                                <?php if ($post['permalink'] !== null && $post['permalink'] !== ''): ?>
+                                    <a href="<?= e($post['permalink']) ?>" target="_blank" rel="noopener">
+                                        <?= e($label) ?>
+                                    </a>
+                                <?php else: ?>
+                                    <?= e($label) ?>
+                                <?php endif; ?>
                             </div>
                             <?php $exc = Text::excerpt($post['content'] ?? ''); ?>
                             <?php if ($exc !== ''): ?>
                                 <div class="excerpt"><?= e($exc) ?></div>
                             <?php endif; ?>
                             <div class="meta">
-                                <?= e((new DateTimeImmutable($post['date']))->format('Y-m-d H:i')) ?>
+                                <?= e((new DateTimeImmutable($post['date'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Berlin'))->format('Y-m-d H:i')) ?>
                                 ·
                                 <a href="<?= e($post['blog_url']) ?>" target="_blank" rel="noopener">
                                     <?= e(parse_url($post['blog_url'], PHP_URL_HOST) ?? $post['blog_url']) ?>

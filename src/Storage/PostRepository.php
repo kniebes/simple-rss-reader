@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Kniebes\SimpleRssReader\Storage;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Kniebes\SimpleRssReader\Feed\Entry;
 use Kniebes\SimpleRssReader\Feed\Feed;
 use PDO;
 
 final class PostRepository
 {
+    private const MYSQL_DATETIME = 'Y-m-d H:i:s';
+
     public function __construct(private readonly PDO $pdo)
     {
     }
@@ -17,16 +21,16 @@ final class PostRepository
     public function insertIgnore(Entry $entry, Feed $feed): bool
     {
         $stmt = $this->pdo->prepare(<<<'SQL'
-            INSERT INTO posts (date, feed_url, blog_url, permalink, title, content, status)
-            VALUES (:date, :feed_url, :blog_url, :permalink, :title, :content, 'new')
-            ON CONFLICT(permalink) DO UPDATE SET
-                content = excluded.content
-            WHERE posts.content = '' AND excluded.content <> ''
+            INSERT INTO posts (date, feed_url, blog_url, guid, permalink, title, content, status)
+            VALUES (:date, :feed_url, :blog_url, :guid, :permalink, :title, :content, 'new')
+            ON DUPLICATE KEY UPDATE
+                content = IF(posts.content = '' AND VALUES(content) <> '', VALUES(content), posts.content)
         SQL);
         $stmt->execute([
-            ':date' => $entry->date->format(DATE_ATOM),
+            ':date' => $entry->date->setTimezone(new DateTimeZone('UTC'))->format(self::MYSQL_DATETIME),
             ':feed_url' => $feed->feedUrl,
             ':blog_url' => $feed->blogUrl,
+            ':guid' => $entry->guid,
             ':permalink' => $entry->permalink,
             ':title' => $entry->title,
             ':content' => $entry->content,
@@ -36,7 +40,7 @@ final class PostRepository
     }
 
     /**
-     * @return list<array{id:int,date:string,feed_url:string,blog_url:string,permalink:string,title:string,status:string}>
+     * @return list<array{id:int,date:string,feed_url:string,blog_url:string,guid:string,permalink:?string,title:string,status:string}>
      */
     public function findByStatus(?string $status): array
     {
@@ -60,8 +64,9 @@ final class PostRepository
 
     public function deleteOlderThanDays(int $days): int
     {
-        $stmt = $this->pdo->prepare("DELETE FROM posts WHERE datetime(date) < datetime('now', :rel)");
-        $stmt->execute([':rel' => "-{$days} days"]);
+        $cutoff = (new DateTimeImmutable("-{$days} days", new DateTimeZone('UTC')))->format(self::MYSQL_DATETIME);
+        $stmt = $this->pdo->prepare('DELETE FROM posts WHERE date < :cutoff');
+        $stmt->execute([':cutoff' => $cutoff]);
 
         return $stmt->rowCount();
     }
@@ -87,7 +92,7 @@ final class PostRepository
     }
 
     /**
-     * @return array<string, list<array{id:int,date:string,feed_url:string,blog_url:string,permalink:string,title:string,content:string,status:string,category:?string}>>
+     * @return array<string, list<array{id:int,date:string,feed_url:string,blog_url:string,guid:string,permalink:?string,title:string,content:string,status:string,category:?string}>>
      */
     public function findGroupedByCategory(?string $status): array
     {

@@ -5,53 +5,39 @@ declare(strict_types=1);
 namespace Kniebes\SimpleRssReader\Storage;
 
 use PDO;
+use RuntimeException;
 
 final class Database
 {
-    public static function open(string $sqlitePath): PDO
+    public static function open(): PDO
     {
-        $dir = dirname($sqlitePath);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+        $url = (string) ($_ENV['DATABASE_URL'] ?? '');
+        if ($url === '') {
+            throw new RuntimeException('DATABASE_URL is not set. Hinterlege ihn in .env / .env.local oder als ENV-Variable.');
         }
 
-        $pdo = new PDO("sqlite:{$sqlitePath}", null, null, [
+        $parts = parse_url($url);
+        if ($parts === false || ($parts['scheme'] ?? '') !== 'mysql') {
+            throw new RuntimeException('DATABASE_URL must be a mysql:// URL');
+        }
+
+        $host = $parts['host'] ?? 'db';
+        $port = (int) ($parts['port'] ?? 3306);
+        $dbname = ltrim((string) ($parts['path'] ?? ''), '/');
+        $user = rawurldecode((string) ($parts['user'] ?? ''));
+        $pass = rawurldecode((string) ($parts['pass'] ?? ''));
+
+        if ($dbname === '') {
+            throw new RuntimeException('DATABASE_URL is missing the database name (path)');
+        }
+
+        $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
+        $pdo = new PDO($dsn, $user, $pass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
         ]);
-        $pdo->exec('PRAGMA journal_mode = WAL');
-        $pdo->exec('PRAGMA foreign_keys = ON');
-
-        self::ensureSchema($pdo);
 
         return $pdo;
-    }
-
-    private static function ensureSchema(PDO $pdo): void
-    {
-        $pdo->exec(<<<'SQL'
-            CREATE TABLE IF NOT EXISTS posts (
-                id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                date      TEXT NOT NULL,
-                feed_url  TEXT NOT NULL,
-                blog_url  TEXT NOT NULL,
-                permalink TEXT NOT NULL UNIQUE,
-                title     TEXT NOT NULL,
-                content   TEXT NOT NULL DEFAULT '',
-                status    TEXT NOT NULL DEFAULT 'new'
-                          CHECK (status IN ('new','read'))
-            )
-        SQL);
-        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_posts_status_date ON posts(status, date DESC)');
-
-        $columns = $pdo->query('PRAGMA table_info(posts)')->fetchAll();
-        $existing = array_column($columns, 'name');
-        if (!in_array('content', $existing, true)) {
-            $pdo->exec("ALTER TABLE posts ADD COLUMN content TEXT NOT NULL DEFAULT ''");
-        }
-        if (!in_array('category', $existing, true)) {
-            $pdo->exec('ALTER TABLE posts ADD COLUMN category TEXT NULL');
-        }
-        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category)');
     }
 }

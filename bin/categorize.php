@@ -6,29 +6,20 @@ use Kniebes\SimpleRssReader\Category\CategoryList;
 use Kniebes\SimpleRssReader\Category\Classifier;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
+use Symfony\Component\Dotenv\Dotenv;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $projectRoot = dirname(__DIR__);
+
 $envFile = $projectRoot . '/.env';
-if (is_readable($envFile)) {
-    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
-        $line = trim($line);
-        if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
-            continue;
-        }
-        [$key, $value] = explode('=', $line, 2);
-        $key = trim($key);
-        $value = trim($value, " \t\"'");
-        if (getenv($key) === false) {
-            putenv("{$key}={$value}");
-        }
-    }
+if (is_file($envFile)) {
+    (new Dotenv())->loadEnv($envFile);
 }
 
-$apiKey = (string) getenv('ANTHROPIC_API_KEY');
-if ($apiKey === '') {
-    fwrite(STDERR, "ANTHROPIC_API_KEY is not set. Hinterlege ihn in .env oder als ENV-Variable.\n");
+$apiKey = (string) ($_ENV['ANTHROPIC_API_KEY'] ?? null);
+if (empty($apiKey)) {
+    fwrite(STDERR, "ANTHROPIC_API_KEY is not set. Hinterlege ihn in .env / .env.local oder als ENV-Variable.\n");
     exit(1);
 }
 
@@ -38,7 +29,7 @@ if ($categories->all() === []) {
     exit(1);
 }
 
-$repository = new PostRepository(Database::open($projectRoot . '/var/posts.db'));
+$repository = new PostRepository(Database::open());
 $classifier = new Classifier(apiKey: $apiKey, categories: $categories);
 
 $batchSize = 25;

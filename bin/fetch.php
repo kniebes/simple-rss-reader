@@ -7,17 +7,22 @@ use Kniebes\SimpleRssReader\Feed\MultiFeedFetcher;
 use Kniebes\SimpleRssReader\Opml\OpmlReader;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
+use Symfony\Component\Dotenv\Dotenv;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $projectRoot = dirname(__DIR__);
 $opmlPath = $projectRoot . '/var/feeds.opml';
-$dbPath = $projectRoot . '/var/posts.db';
+
+$envFile = $projectRoot . '/.env';
+if (is_file($envFile)) {
+    (new Dotenv())->loadEnv($envFile);
+}
 
 $opmlReader = new OpmlReader();
 $feedParser = new FeedParser();
 $fetcher = new MultiFeedFetcher();
-$repository = new PostRepository(Database::open($dbPath));
+$repository = new PostRepository(Database::open());
 
 $feeds = $opmlReader->readFeeds($opmlPath);
 $total = count($feeds);

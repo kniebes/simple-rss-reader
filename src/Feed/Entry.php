@@ -10,7 +10,8 @@ final readonly class Entry
 {
     public function __construct(
         public DateTimeImmutable $date,
-        public string $permalink,
+        public string $guid,
+        public ?string $permalink,
         public string $title,
         public string $content,
     ) {

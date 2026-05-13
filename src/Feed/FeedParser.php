@@ -46,15 +46,19 @@ final class FeedParser
         $entries = [];
         foreach ($rss->channel->item as $item) {
             $link = trim((string) $item->link);
-            if ($link === '') {
-                $guid = (string) $item->guid;
-                $isPermaLink = (string) ($item->guid['isPermaLink'] ?? 'true');
-                if ($guid !== '' && $isPermaLink !== 'false') {
-                    $link = $guid;
-                }
-            }
-            if ($link === '') {
+            $guid = trim((string) $item->guid);
+
+            $dedupKey = $guid !== '' ? $guid : $link;
+            if ($dedupKey === '') {
                 continue;
+            }
+
+            $permalink = $link !== '' ? $link : null;
+            if ($permalink === null && $guid !== '') {
+                $isPermaLink = (string) ($item->guid['isPermaLink'] ?? 'true');
+                if ($isPermaLink !== 'false') {
+                    $permalink = $guid;
+                }
             }
 
             $dateString = trim((string) $item->pubDate);
@@ -76,7 +80,8 @@ final class FeedParser
 
             $entries[] = new Entry(
                 date: $date,
-                permalink: $link,
+                guid: $dedupKey,
+                permalink: $permalink,
                 title: trim((string) $item->title),
                 content: $content,
             );
@@ -92,10 +97,15 @@ final class FeedParser
     {
         $entries = [];
         foreach ($feed->entry as $entry) {
+            $id = trim((string) $entry->id);
             $link = $this->pickAtomLink($entry);
-            if ($link === '') {
+
+            $dedupKey = $id !== '' ? $id : $link;
+            if ($dedupKey === '') {
                 continue;
             }
+
+            $permalink = $link !== '' ? $link : null;
 
             $dateString = trim((string) $entry->updated);
             if ($dateString === '') {
@@ -114,7 +124,8 @@ final class FeedParser
 
             $entries[] = new Entry(
                 date: $date,
-                permalink: $link,
+                guid: $dedupKey,
+                permalink: $permalink,
                 title: trim((string) $entry->title),
                 content: $content,
             );
