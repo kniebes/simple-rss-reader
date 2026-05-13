@@ -1,5 +1,7 @@
 /vendor/
 
+/.env
+
 /var/posts.db
 /var/posts.db-shm
 /var/posts.db-wal

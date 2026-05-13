@@ -57,4 +57,53 @@ final class PostRepository
 
         return $stmt->rowCount();
     }
+
+    public function deleteOlderThanDays(int $days): int
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM posts WHERE datetime(date) < datetime('now', :rel)");
+        $stmt->execute([':rel' => "-{$days} days"]);
+
+        return $stmt->rowCount();
+    }
+
+    /**
+     * @return list<array{id:int,title:string,content:string,blog_url:string}>
+     */
+    public function findUncategorized(int $limit = 0): array
+    {
+        $sql = "SELECT id, title, content, blog_url FROM posts WHERE category IS NULL AND status = 'new' ORDER BY date DESC";
+        if ($limit > 0) {
+            $sql .= ' LIMIT ' . $limit;
+        }
+        $stmt = $this->pdo->query($sql);
+
+        return $stmt->fetchAll();
+    }
+
+    public function setCategory(int $id, ?string $category): void
+    {
+        $stmt = $this->pdo->prepare('UPDATE posts SET category = :cat WHERE id = :id');
+        $stmt->execute([':cat' => $category, ':id' => $id]);
+    }
+
+    /**
+     * @return array<string, list<array{id:int,date:string,feed_url:string,blog_url:string,permalink:string,title:string,content:string,status:string,category:?string}>>
+     */
+    public function findGroupedByCategory(?string $status): array
+    {
+        if ($status === null) {
+            $stmt = $this->pdo->query('SELECT * FROM posts ORDER BY date DESC');
+        } else {
+            $stmt = $this->pdo->prepare('SELECT * FROM posts WHERE status = :status ORDER BY date DESC');
+            $stmt->execute([':status' => $status]);
+        }
+
+        $grouped = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $key = ($row['category'] ?? '') !== '' ? (string) $row['category'] : '';
+            $grouped[$key][] = $row;
+        }
+
+        return $grouped;
+    }
 }

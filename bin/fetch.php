@@ -30,17 +30,24 @@ $context = stream_context_create([
     ],
 ]);
 
-foreach ($opmlReader->readFeeds($opmlPath) as $feed) {
+$feeds = $opmlReader->readFeeds($opmlPath);
+$total = count($feeds);
+$width = strlen((string) $total);
+$totalCount = 0;
+
+foreach ($feeds as $i => $feed) {
+    $prefix = sprintf("%{$width}d/%d", $i + 1, $total);
+
     $xml = @file_get_contents($feed->feedUrl, false, $context);
     if ($xml === false) {
-        fwrite(STDERR, "[FAIL] {$feed->feedUrl}: download failed\n");
+        fwrite(STDERR, "{$prefix} [FAIL] {$feed->feedUrl}: download failed\n");
         continue;
     }
 
     try {
         $entries = $feedParser->parse($xml);
     } catch (Throwable $e) {
-        fwrite(STDERR, "[FAIL] {$feed->feedUrl}: {$e->getMessage()}\n");
+        fwrite(STDERR, "{$prefix} [FAIL] {$feed->feedUrl}: {$e->getMessage()}\n");
         continue;
     }
 
@@ -48,8 +55,14 @@ foreach ($opmlReader->readFeeds($opmlPath) as $feed) {
     foreach ($entries as $entry) {
         if ($repository->insertIgnore($entry, $feed)) {
             $newCount++;
+            $totalCount++;
         }
     }
 
-    echo "[OK] {$feed->feedUrl} ({$newCount} new)\n";
+    echo "{$prefix} [OK] {$feed->feedUrl} ({$newCount} new)\n";
 }
+
+printf('Total New Items: %s' . PHP_EOL, $totalCount);
+
+$deleted = $repository->deleteOlderThanDays(5);
+printf('Deleted %d posts older than 5 days.' . PHP_EOL, $deleted);

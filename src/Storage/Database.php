@@ -49,5 +49,9 @@ final class Database
         if (!in_array('content', $existing, true)) {
             $pdo->exec("ALTER TABLE posts ADD COLUMN content TEXT NOT NULL DEFAULT ''");
         }
+        if (!in_array('category', $existing, true)) {
+            $pdo->exec('ALTER TABLE posts ADD COLUMN category TEXT NULL');
+        }
+        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category)');
     }
 }
