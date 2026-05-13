@@ -88,21 +88,23 @@ function e(string $s): string {
         <p class="empty">Keine Posts.</p>
     <?php else: ?>
         <?php
+        $relevance = array_flip($categories->names());
+        $uncategorized = $grouped[''] ?? [];
+
         $sections = [];
-        foreach ($categories->all() as $cat) {
-            if (!empty($grouped[$cat->name])) {
-                $sections[] = ['title' => $cat->name, 'posts' => $grouped[$cat->name]];
-            }
-        }
-        $known = $categories->names();
-        $uncategorized = [];
         foreach ($grouped as $name => $posts) {
-            if ($name === '' || !in_array($name, $known, true)) {
-                array_push($uncategorized, ...$posts);
+            if ($name === '') {
+                continue;
             }
+            $sections[] = [
+                'title' => $name,
+                'posts' => $posts,
+                'sort'  => $relevance[$name] ?? PHP_INT_MAX,
+            ];
         }
+        usort($sections, static fn ($a, $b) => [$a['sort'], $a['title']] <=> [$b['sort'], $b['title']]);
+
         if ($uncategorized !== []) {
-            usort($uncategorized, static fn ($a, $b) => strcmp($b['date'], $a['date']));
             $sections[] = ['title' => 'Nicht kategorisiert', 'posts' => $uncategorized];
         }
         ?>
