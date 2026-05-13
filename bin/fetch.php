@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Kniebes\SimpleRssReader\Feed\FeedParser;
+use Kniebes\SimpleRssReader\Feed\MultiFeedFetcher;
 use Kniebes\SimpleRssReader\Opml\OpmlReader;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
@@ -15,54 +16,54 @@ $dbPath = $projectRoot . '/var/posts.db';
 
 $opmlReader = new OpmlReader();
 $feedParser = new FeedParser();
+$fetcher = new MultiFeedFetcher();
 $repository = new PostRepository(Database::open($dbPath));
-
-$context = stream_context_create([
-    'http' => [
-        'timeout' => 10,
-        'header' => "User-Agent: simple-rss-reader/0.1\r\n",
-        'follow_location' => 1,
-    ],
-    'https' => [
-        'timeout' => 10,
-        'header' => "User-Agent: simple-rss-reader/0.1\r\n",
-        'follow_location' => 1,
-    ],
-]);
 
 $feeds = $opmlReader->readFeeds($opmlPath);
 $total = count($feeds);
-$width = strlen((string) $total);
+$byUrl = [];
+foreach ($feeds as $feed) {
+    $byUrl[$feed->feedUrl] = $feed;
+}
+
+$retentionDays = 5;
+$cutoff = new DateTimeImmutable("-{$retentionDays} days");
+
+$done = 0;
 $totalCount = 0;
 
-foreach ($feeds as $i => $feed) {
-    $prefix = sprintf("%{$width}d/%d", $i + 1, $total);
+foreach ($fetcher->fetchAll(array_keys($byUrl)) as [$url, $body, $error]) {
+    $done++;
+    $feed = $byUrl[$url];
+    $prefix = sprintf('[%d/%d]', $done, $total);
 
-    $xml = @file_get_contents($feed->feedUrl, false, $context);
-    if ($xml === false) {
-        fwrite(STDERR, "{$prefix} [FAIL] {$feed->feedUrl}: download failed\n");
+    if ($body === null) {
+        fwrite(STDERR, "{$prefix} [FAIL] {$url}: {$error}\n");
         continue;
     }
 
     try {
-        $entries = $feedParser->parse($xml);
+        $entries = $feedParser->parse($body);
     } catch (Throwable $e) {
-        fwrite(STDERR, "{$prefix} [FAIL] {$feed->feedUrl}: {$e->getMessage()}\n");
+        fwrite(STDERR, "{$prefix} [FAIL] {$url}: {$e->getMessage()}\n");
         continue;
     }
 
     $newCount = 0;
     foreach ($entries as $entry) {
+        if ($entry->date < $cutoff) {
+            continue;
+        }
         if ($repository->insertIgnore($entry, $feed)) {
             $newCount++;
             $totalCount++;
         }
     }
 
-    echo "{$prefix} [OK] {$feed->feedUrl} ({$newCount} new)\n";
+    echo "{$prefix} [OK] {$url} ({$newCount} new)\n";
 }
 
 printf('Total New Items: %s' . PHP_EOL, $totalCount);
 
-$deleted = $repository->deleteOlderThanDays(5);
-printf('Deleted %d posts older than 5 days.' . PHP_EOL, $deleted);
+$deleted = $repository->deleteOlderThanDays($retentionDays);
+printf('Deleted %d posts older than %d days.' . PHP_EOL, $deleted, $retentionDays);
