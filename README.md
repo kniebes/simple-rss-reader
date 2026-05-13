@@ -1,14 +1,15 @@
 # simple-rss-reader
 
 Minimaler PHP-RSS-Reader. Lädt Feeds aus einer OPML-Datei, speichert Entries in
-SQLite, klassifiziert sie optional per Claude in Kategorien und zeigt sie über
-eine einzelne `index.php` an.
+MariaDB (DDEV-Container), klassifiziert sie optional per Claude in Kategorien
+und zeigt sie über eine einzelne `index.php` an.
 
 ## Voraussetzungen
 
-- DDEV (PHP 8.4, nginx-fpm)
+- DDEV (PHP 8.4, nginx-fpm, MariaDB 11.8)
 - Composer (über `ddev composer`)
 - `ext-curl` (für parallele Feed-Fetches und die Anthropic-API)
+- `pdo_mysql` (Standard im DDEV-PHP-Image)
 
 ## Setup
 
@@ -24,16 +25,21 @@ Kategorien werden aus `var/categories.md` gelesen (Format pro Zeile:
 `- Name: Beschreibung`). Die Beschreibung geht 1:1 in den System-Prompt des
 Classifiers und entscheidet, was in eine Kategorie fällt.
 
-Für die Klassifizierung ein Anthropic-API-Key in `.env` ablegen:
+In `.env` (gitignored) sind zwei Variablen erforderlich:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
+DATABASE_URL="mysql://db:db@db:3306/db"
 ```
 
-Geladen wird via `symfony/dotenv` (`Dotenv::loadEnv()`); `.env.local` überschreibt
-`.env` (sinnvoll für das echte Secret, während `.env` als gitignored/getrackter
-Template-Platzhalter dient), und ein im Shell gesetztes `ANTHROPIC_API_KEY`
-schlägt beides.
+`DATABASE_URL` zeigt per Default auf den DDEV-MariaDB-Container (Host `db`,
+User/Pass/Datenbank jeweils `db`). Anpassen nur, wenn du gegen eine andere
+MySQL-/MariaDB-Instanz fahren willst. `.env.example` enthält die Templates.
+
+Geladen wird via `symfony/dotenv` (`Dotenv::loadEnv()`); `.env.local`
+überschreibt `.env` (sinnvoll für echte Secrets, während `.env` als
+Template-Platzhalter dient), und im Shell gesetzte ENV-Variablen schlagen
+beides.
 
 ## Verwendung
 
@@ -44,8 +50,9 @@ ddev exec php bin/fetch.php
 ```
 
 Lädt alle Feeds parallel (curl_multi, bis zu 10 gleichzeitig), schreibt neue
-Entries in `var/posts.db` (wird beim ersten Lauf angelegt) und löscht am Ende
-Posts, die älter als 5 Tage sind. Duplikate via `permalink` werden ignoriert;
+Entries in die DB-Tabelle `posts` (muss vorher manuell angelegt werden, siehe
+[DB-Schema](#db-schema)) und löscht am Ende Posts, die älter als 5 Tage sind.
+Dedup läuft über `guid` (RSS `<guid>` bzw. Atom `<id>`, Fallback `<link>`);
 bei Bestandsposts wird ein noch leerer `content` einmalig nachgefüllt, sonst
 bleibt der Status unangetastet.
 
@@ -65,8 +72,10 @@ und werden in der UI unter „Nicht kategorisiert" gesammelt.
 - `?filter=new` (Default) — ungelesene Posts
 - `?filter=read` — gelesene Posts
 - `?filter=all` — alle Posts
-- Posts werden nach Kategorie gruppiert (Reihenfolge wie in `categories.md`),
-  Unbekanntes / Nicht-Klassifiziertes sammelt sich am Ende.
+- Sektionen kommen aus den DB-vorhandenen Kategorien. `categories.md` dient
+  nur als Sortier-Hint: bekannte Kategorien erscheinen in der dort
+  definierten Reihenfolge, abweichende DB-Kategorien danach alphabetisch.
+  „Nicht kategorisiert" (`category` ist `NULL` oder `''`) steht am Ende.
 - Button „Alle als gelesen markieren" setzt jeden `new`-Post auf `read`.
 
 ## Struktur
@@ -85,55 +94,63 @@ src/
   Category/Category.php      # Value Object (name, description, relevance)
   Category/CategoryList.php  # Parser für var/categories.md
   Category/Classifier.php    # Anthropic Messages API (Haiku 4.5) + Prompt-Caching
-  Storage/Database.php       # PDO/SQLite + Schema (idempotent)
+  Storage/Database.php       # PDO/MySQL-Verbindung aus DATABASE_URL (parsed URL → DSN)
   Storage/PostRepository.php # UPSERT, findByStatus, findGroupedByCategory, markAllRead, …
   Util/Text.php              # HTML → Plain-Text Excerpt
 var/
   feeds.opml                 # Input
-  categories.md              # Input
-  posts.db                   # SQLite-DB (gitignored, entsteht beim Fetch)
+  categories.md              # Input (nur für den Classifier)
 ```
 
 ## DB-Schema
 
 ```sql
 CREATE TABLE posts (
-    id        INTEGER PRIMARY KEY AUTOINCREMENT,
-    date      TEXT NOT NULL,                          -- ISO 8601
-    feed_url  TEXT NOT NULL,
-    blog_url  TEXT NOT NULL,
-    guid      TEXT NOT NULL UNIQUE,                   -- Dedup-Key: RSS <guid> / Atom <id>,
-                                                      -- Fallback <link> wenn keiner gesetzt
-    permalink TEXT NULL,                              -- URL zum Anzeigen — NULL wenn Feed
-                                                      -- keinen Link liefert (z. B. rss-club)
-    title     TEXT NOT NULL,
-    content   TEXT NOT NULL DEFAULT '',
-    status    TEXT NOT NULL DEFAULT 'new'
-              CHECK (status IN ('new','read')),
-    category  TEXT NULL                                -- NULL = noch nicht klassifiziert,
+    id        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    date      DATETIME      NOT NULL,                  -- intern UTC, Anzeige in Europe/Berlin
+    feed_url  VARCHAR(2048) NOT NULL,
+    blog_url  VARCHAR(2048) NOT NULL,
+    guid      VARCHAR(255)  NOT NULL UNIQUE,           -- Dedup-Key: RSS <guid> / Atom <id>,
+                                                       -- Fallback <link> wenn keiner gesetzt
+    permalink VARCHAR(2048) NULL,                      -- URL zum Anzeigen — NULL wenn Feed
+                                                       -- keinen Link liefert (z. B. rss-club)
+    title     TEXT          NOT NULL,
+    content   MEDIUMTEXT    NOT NULL,
+    status    ENUM('new','read') NOT NULL DEFAULT 'new',
+    category  VARCHAR(64)   NULL,                      -- NULL = noch nicht klassifiziert,
                                                        -- '' = klassifiziert ohne Match
-);
-CREATE INDEX idx_posts_status_date ON posts(status, date DESC);
-CREATE INDEX idx_posts_category   ON posts(category);
+    INDEX idx_posts_status_date (status, date),
+    INDEX idx_posts_category    (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
+
+Schema wird manuell angelegt — kein Auto-Setup, kein Migrations-Tool. Beim
+ersten Setup (oder nach Schema-Änderungen) das `CREATE TABLE` direkt im
+DDEV-Container ausführen:
+
+```sh
+ddev mysql -e "DROP TABLE IF EXISTS posts; CREATE TABLE posts (...);"
+ddev exec php bin/fetch.php
+```
+
+Die 5-Tages-Retention macht ein gelegentliches `DROP` + Re-Fetch
+verkraftbar.
 
 ## Caveats
 
-- **Kaputte Feeds werden übersprungen.** Beispiel: `nrw.nabu.de/rssfeed.php`
+- **Kaputte Feeds werden übersprungen.** Beispiel: `blogs.nabu.de/feed/`
   prefixt seinen RSS-Body mit einem MySQL-Fehlertext und ist damit kein gültiges
   XML mehr. Der Fetcher loggt `[FAIL] …` auf STDERR und macht weiter.
-- **`(n new)`-Zähler ist nicht ganz exakt.** Bei einer Schema-Erweiterung
-  (z. B. `content` nachgezogen) kann ein Lauf Bestandsposts updaten, die im
-  Zähler dann als "new" auftauchen — ab dem nächsten Lauf wieder korrekt.
+- **`(n new)`-Zähler ist nicht ganz exakt.** `PDO::rowCount()` unterscheidet
+  bei `ON DUPLICATE KEY UPDATE` nicht trennscharf zwischen INSERT und
+  qualifiziertem UPDATE — bei einem Backfill (z. B. `content` nachgezogen)
+  zählen UPDATEs als „new". Im Steady State stimmt der Zähler wieder.
 - **Retention ist hart auf 5 Tage.** `bin/fetch.php` löscht am Ende jedes Laufs
   alle Posts, deren `date` älter ist — Lesezustand inklusive. Wer länger
   archivieren will, muss den Konstanten-Wert in `fetch.php` anheben.
 - **`categorize.php` bricht bei API-Fehlern hart ab** (`exit 2`), damit der
   nächste Lauf denselben Batch retried. Kein partielles Persistieren mitten im
   Batch.
-- **Einmalige Duplikat-Welle bei der `guid`-Migration.** Bestandsposts werden
-  mit `guid = permalink` gebackfillt. Bei Feeds, deren `<guid>` ≠ `<link>` ist
-  (z. B. WordPress mit `<guid isPermaLink="false">…?p=123</guid>`), erscheint
-  der nächste Fetch jedem solchen Item ein zweites Mal — alter Row mit
-  `guid=link`, neuer Row mit dem echten Feed-Guid. Die Retention räumt das
-  innerhalb von 5 Tagen auf; ggf. einmalig „Alle als gelesen markieren" klicken.
+- **Anzeigezeit ist hart auf `Europe/Berlin`.** `public/index.php` konvertiert
+  die UTC-DATETIME aus der DB explizit dorthin. Wer in einer anderen TZ
+  rendern will, muss das im Template ändern.
