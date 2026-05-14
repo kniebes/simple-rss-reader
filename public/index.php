@@ -58,12 +58,12 @@ function e(string $s): string {
     <header>
         <h1>Simple Feed Reader</h1>
         <nav>
-            <a href="?filter=new"<?= $filter === 'new' ? ' class="active"' : '' ?>>Neu</a>
-            <a href="?filter=read"<?= $filter === 'read' ? ' class="active"' : '' ?>>Gelesen</a>
-            <a href="?filter=all"<?= $filter === 'all' ? ' class="active"' : '' ?>>Alle</a>
-            <a href="/fetch.php">Fetch</a>
+            <a class="button<?= $filter === 'new' ? ' active' : '' ?>" href="?filter=new">Neu</a>
+            <a class="button<?= $filter === 'read' ? ' active' : '' ?>" href="?filter=read">Gelesen</a>
+            <a class="button<?= $filter === 'all' ? ' active' : '' ?>" href="?filter=all">Alle</a>
         </nav>
         <form method="post">
+            <a class="button" href="/fetch.php">Fetch</a>
             <input type="hidden" name="action" value="mark_all_read">
             <button type="submit">Alle als gelesen markieren</button>
         </form>
@@ -93,9 +93,16 @@ function e(string $s): string {
             $sections[] = ['title' => 'Nicht kategorisiert', 'posts' => $uncategorized];
         }
         ?>
+
+        <section class="summary">
+            <?php foreach ($sections as $section): ?>
+                <a href="#<?= md5($section['title']) ?>"><?= e($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></a>
+            <?php endforeach; ?>
+        </section>
+
         <?php foreach ($sections as $section): ?>
             <section>
-                <h2><?= e($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></h2>
+                <h2 id="<?= md5($section['title']) ?>"><?= e($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></h2>
                     <?php foreach ($section['posts'] as $post): ?>
                         <article>
                             <h3 class="<?= $post['status'] === 'new' ? 'new' : '' ?>">

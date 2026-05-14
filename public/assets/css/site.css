@@ -4,6 +4,7 @@
     --bg-code: rgb(236,230,219);
     --bg-details: rgb(236,230,219);
     --bg-article: rgb(236,230,219);
+    --bg-button: rgb(200,193,182);
     --text: #3d2e1f;
     --text-muted: #6b5840;
     --text-hint: #8b7355;
@@ -13,6 +14,27 @@
 
     --border-radius: 6px;
     --scanline-opacity: .03;
+}
+
+* {
+    border: 0;
+    font-family: inherit;
+    font-size: 100%;
+    font-style: inherit;
+    font-weight: inherit;
+    margin: 0;
+    outline: 0;
+    padding: 0;
+    vertical-align: baseline;
+}
+
+html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: none;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    scroll-behavior: smooth;
 }
 
 body {
@@ -29,6 +51,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     gap: 1rem;
     margin-bottom: 2rem;
 }
@@ -242,44 +265,41 @@ hr {
     margin: 1.5em 0;
 }
 
-table {
-    border-collapse: separate;
-    border-spacing: 0;
-    margin: 1rem 0;
-    width: 100%;
+button, .button {
+    background: var(--bg-button);
+    color: #000;
+    border-radius: var(--border-radius);
+    padding: .2rem .4rem;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: .70rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+    font-family: sans-serif;
+    border: 1px solid var(--bg-button);
+}
+
+button.active, .button.active {
+    border-color: darkorange;
+    box-shadow: 0 0 5px rgba(0,0,0,.5);
+}
+
+section.summary {
+    display: flex;
+    flex-direction: row;
+    gap: .5rem;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin: 2rem 0;
+    text-align: center;
+}
+
+section.summary > a {
+    display: inline-block;
+    text-decoration: none;
+    padding: 0.1rem .7rem;
     border: 1px solid var(--border);
     border-radius: var(--border-radius);
-    overflow: hidden;
 }
 
-table th,
-table td {
-    border-right: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    padding: 0.4rem 0.6rem;
-    text-align: left;
-    vertical-align: top;
-}
 
-table th:last-child,
-table td:last-child {
-    border-right: none;
-}
-
-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-table thead th {
-    background-color: var(--bg-elevated);
-    font-weight: 600;
-}
-
-table tbody tr:nth-child(even) {
-    background-color: var(--bg-code);
-}
-
-.has-scanlines {
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, var(--scanline-opacity)) 2px, rgba(0, 0, 0, var(--scanline-opacity)) 4px);
-    inset:0
-}
