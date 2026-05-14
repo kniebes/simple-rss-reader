@@ -16,6 +16,7 @@
     "require": {
       "ext-curl": "*",
         "symfony/dotenv": "^8.0",
-      "ext-pdo": "*"
+      "ext-pdo": "*",
+        "dg/ftp-deployment": "^3.7"
     }
 }

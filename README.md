@@ -4,9 +4,12 @@ Minimaler PHP-RSS-Reader. Lädt Feeds aus einer OPML-Datei, speichert Entries in
 MariaDB (DDEV-Container), klassifiziert sie optional per Claude in Kategorien
 und zeigt sie über eine einzelne `index.php` an.
 
+- **Dev:** <https://simple-rss-reader.ddev.site/>
+- **Prod:** <https://reader.example.com/>
+
 ## Voraussetzungen
 
-- DDEV (PHP 8.4, nginx-fpm, MariaDB 11.8)
+- DDEV (PHP 8.4, apache-fpm, MariaDB 11.8)
 - Composer (über `ddev composer`)
 - `ext-curl` (für parallele Feed-Fetches und die Anthropic-API)
 - `pdo_mysql` (Standard im DDEV-PHP-Image)
@@ -43,24 +46,29 @@ beides.
 
 ## Verwendung
 
-**Feeds laden / aktualisieren** (CLI, idempotent):
+**Feeds laden / aktualisieren** (idempotent — CLI oder Browser):
 
 ```sh
-ddev exec php bin/fetch.php
+ddev exec php public/fetch.php
 ```
+
+Oder im Browser: `https://simple-rss-reader.ddev.site/fetch.php` (auch
+verlinkt als „Fetch" in der Navigation).
 
 Lädt alle Feeds parallel (curl_multi, bis zu 10 gleichzeitig), schreibt neue
-Entries in die DB-Tabelle `posts` (muss vorher manuell angelegt werden, siehe
-[DB-Schema](#db-schema)) und löscht am Ende Posts, die älter als 5 Tage sind.
-Dedup läuft über `guid` (RSS `<guid>` bzw. Atom `<id>`, Fallback `<link>`);
-bei Bestandsposts wird ein noch leerer `content` einmalig nachgefüllt, sonst
-bleibt der Status unangetastet.
+Entries in die DB-Tabelle `simeple_rss_reader_posts` (muss vorher manuell
+angelegt werden, siehe [DB-Schema](#db-schema)) und löscht am Ende Posts, die
+älter als 5 Tage sind. Dedup läuft über `guid` (RSS `<guid>` bzw. Atom `<id>`,
+Fallback `<link>`); bei Bestandsposts wird ein noch leerer `content` einmalig
+nachgefüllt, sonst bleibt der Status unangetastet.
 
-**Posts klassifizieren** (CLI, idempotent):
+**Posts klassifizieren** (idempotent — CLI oder Browser):
 
 ```sh
-ddev exec php bin/categorize.php
+ddev exec php public/categorize.php
 ```
+
+Oder im Browser: `https://simple-rss-reader.ddev.site/categorize.php`.
 
 Liest alle noch unkategorisierten `new`-Posts in Batches à 25 und ordnet sie
 über Claude Haiku 4.5 einer der Kategorien aus `var/categories.md` zu. Posts
@@ -77,14 +85,15 @@ und werden in der UI unter „Nicht kategorisiert" gesammelt.
   definierten Reihenfolge, abweichende DB-Kategorien danach alphabetisch.
   „Nicht kategorisiert" (`category` ist `NULL` oder `''`) steht am Ende.
 - Button „Alle als gelesen markieren" setzt jeden `new`-Post auf `read`.
+- Nav-Link „Fetch" triggert `/fetch.php` direkt aus der UI.
 
 ## Struktur
 
 ```
-bin/
-  fetch.php                  # CLI: OPML → Feeds parallel laden → DB schreiben → Retention
-  categorize.php             # CLI: ungelabelte Posts an Anthropic API → category setzen
-public/index.php             # Web: Liste + Filter + Kategorie-Gruppierung + Mark-all-read
+public/
+  index.php                  # Web: Liste + Filter + Kategorie-Gruppierung + Mark-all-read
+  fetch.php                  # OPML → Feeds parallel laden → DB schreiben → Retention
+  categorize.php             # ungelabelte Posts an Anthropic API → category setzen
 src/
   Feed/Feed.php              # Value Object (feedUrl, blogUrl)
   Feed/Entry.php             # Value Object (date, permalink, title, content)
@@ -100,12 +109,13 @@ src/
 var/
   feeds.opml                 # Input
   categories.md              # Input (nur für den Classifier)
+deployment.php               # FTP-Deployment-Konfig (dg/ftp-deployment)
 ```
 
 ## DB-Schema
 
 ```sql
-CREATE TABLE posts (
+CREATE TABLE simeple_rss_reader_posts (
     id        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     date      DATETIME      NOT NULL,                  -- intern UTC, Anzeige in Europe/Berlin
     feed_url  VARCHAR(2048) NOT NULL,
@@ -119,8 +129,8 @@ CREATE TABLE posts (
     status    ENUM('new','read') NOT NULL DEFAULT 'new',
     category  VARCHAR(64)   NULL,                      -- NULL = noch nicht klassifiziert,
                                                        -- '' = klassifiziert ohne Match
-    INDEX idx_posts_status_date (status, date),
-    INDEX idx_posts_category    (category)
+    INDEX idx_status_date (status, date),
+    INDEX idx_category    (category)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
@@ -129,23 +139,44 @@ ersten Setup (oder nach Schema-Änderungen) das `CREATE TABLE` direkt im
 DDEV-Container ausführen:
 
 ```sh
-ddev mysql -e "DROP TABLE IF EXISTS posts; CREATE TABLE posts (...);"
-ddev exec php bin/fetch.php
+ddev mysql -e "DROP TABLE IF EXISTS simeple_rss_reader_posts; CREATE TABLE simeple_rss_reader_posts (...);"
+ddev exec php public/fetch.php
 ```
+
+Der Tabellen-Name (`simeple_rss_reader_posts`) trägt ein Projekt-Präfix, weil
+dieselbe DB auf dem Shared-Host produktiv mit anderen Projekten geteilt wird.
 
 Die 5-Tages-Retention macht ein gelegentliches `DROP` + Re-Fetch
 verkraftbar.
+
+## Deployment
+
+Produktion läuft auf einem Shared-Host (`reader.example.com`), Deployment über
+[`dg/ftp-deployment`](https://github.com/dg/ftp-deployment). Konfiguration
+in `deployment.php` (gitignored — enthält FTPS-Credentials im Klartext);
+`temp/` ist der Arbeits-Cache des Deployers, `var/deployment.log` das
+Lauf-Log.
+
+```sh
+vendor/bin/deployment deployment.php
+```
+
+`deployment.php` listet die zu deployenden Pfade (`/public`, `/src`,
+`/vendor`, `/var`, `.env`) und ignoriert u. a. `.git*`, `temp/*` und
+`/deployment.*`. Auf dem Shared-Host gibt es keine CLI — `fetch.php` und
+`categorize.php` werden dort über die Web-URLs angestoßen (Cron oder
+manuell).
 
 ## Caveats
 
 - **Kaputte Feeds werden übersprungen.** Beispiel: `blogs.nabu.de/feed/`
   prefixt seinen RSS-Body mit einem MySQL-Fehlertext und ist damit kein gültiges
-  XML mehr. Der Fetcher loggt `[FAIL] …` auf STDERR und macht weiter.
+  XML mehr. Der Fetcher loggt `[FAIL] …` und macht weiter.
 - **`(n new)`-Zähler ist nicht ganz exakt.** `PDO::rowCount()` unterscheidet
   bei `ON DUPLICATE KEY UPDATE` nicht trennscharf zwischen INSERT und
   qualifiziertem UPDATE — bei einem Backfill (z. B. `content` nachgezogen)
   zählen UPDATEs als „new". Im Steady State stimmt der Zähler wieder.
-- **Retention ist hart auf 5 Tage.** `bin/fetch.php` löscht am Ende jedes Laufs
+- **Retention ist hart auf 5 Tage.** `public/fetch.php` löscht am Ende jedes Laufs
   alle Posts, deren `date` älter ist — Lesezustand inklusive. Wer länger
   archivieren will, muss den Konstanten-Wert in `fetch.php` anheben.
 - **`categorize.php` bricht bei API-Fehlern hart ab** (`exit 2`), damit der
@@ -154,3 +185,7 @@ verkraftbar.
 - **Anzeigezeit ist hart auf `Europe/Berlin`.** `public/index.php` konvertiert
   die UTC-DATETIME aus der DB explizit dorthin. Wer in einer anderen TZ
   rendern will, muss das im Template ändern.
+- **Browser-Output von `fetch.php`/`categorize.php` ist gestreamt.** HTML-Preamble
+  + Padding-Zeilen (4 KB) drücken jede Statusmeldung über die FastCGI-/Browser-
+  Puffer-Schwelle, damit Fortschritt live sichtbar ist statt erst am Ende. Apache
+  `mod_proxy_fcgi` puffert sonst ohne `flushpackets=on`.

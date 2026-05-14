@@ -50,7 +50,7 @@ function e(string $s): string {
 <html lang="de">
 <head>
     <meta charset="utf-8">
-    <title>RSS Reader</title>
+    <title>Reader</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="stylesheet" href="/assets/css/site.css?<?= Kernel::getFileVersion() ?>">
 </head>
@@ -61,6 +61,7 @@ function e(string $s): string {
             <a href="?filter=new"<?= $filter === 'new' ? ' class="active"' : '' ?>>Neu</a>
             <a href="?filter=read"<?= $filter === 'read' ? ' class="active"' : '' ?>>Gelesen</a>
             <a href="?filter=all"<?= $filter === 'all' ? ' class="active"' : '' ?>>Alle</a>
+            <a href="/fetch.php">Fetch</a>
         </nav>
         <form method="post">
             <input type="hidden" name="action" value="mark_all_read">
@@ -104,7 +105,7 @@ function e(string $s): string {
                                     : ($post['permalink'] ?? $post['blog_url']);
                                 ?>
                                 <?php if ($post['permalink'] !== null && $post['permalink'] !== ''): ?>
-                                    <a href="<?= e($post['permalink']) ?>" target="_blank" rel="noopener">
+                                    <a rel="noreferrer" href="<?= e($post['permalink']) ?>" target="_blank" rel="noopener">
                                         <?= e($label) ?>
                                     </a>
                                 <?php else: ?>
@@ -118,7 +119,7 @@ function e(string $s): string {
                             <div class="meta">
                                 <?= e((new DateTimeImmutable($post['date'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Berlin'))->format('Y-m-d H:i')) ?>
                                 ·
-                                <a href="<?= e($post['blog_url']) ?>" target="_blank" rel="noopener">
+                                <a rel="noreferrer" href="<?= e($post['blog_url']) ?>" target="_blank" rel="noopener">
                                     <?= e(parse_url($post['blog_url'], PHP_URL_HOST) ?? $post['blog_url']) ?>
                                 </a>
                             </div>

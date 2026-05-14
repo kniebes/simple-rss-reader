@@ -2,10 +2,12 @@
 
 /.env
 
-/var/posts.db
-/var/posts.db-shm
-/var/posts.db-wal
+/var/deployment.log
 
 .DS_Store
 .idea/
 .vscode/
+
+temp/
+
+deployment.php

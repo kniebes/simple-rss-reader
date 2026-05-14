@@ -11,6 +11,30 @@ use Symfony\Component\Dotenv\Dotenv;
 
 require __DIR__ . '/../vendor/autoload.php';
 
+set_time_limit(0);
+
+// Streaming-Setup: gzip/deflate aus, alle Puffer-Ebenen schließen, implicit flush an.
+if (function_exists('apache_setenv')) {
+    apache_setenv('no-gzip', '1');
+}
+@ini_set('zlib.output_compression', 'Off');
+header('Content-Encoding: none');
+while (ob_get_level() > 0) {
+    ob_end_flush();
+}
+ob_implicit_flush(true);
+
+// Mini-HTML-Preamble + Padding, damit Firefox/Safari den Render-Threshold (~1 KB) erreichen.
+echo "<!doctype html><meta charset=utf-8><title>fetch</title>\n";
+echo str_repeat(' ', 1024) . "\n";
+flush();
+
+// Apache mod_proxy_fcgi puffert FastCGI-Pakete ohne flushpackets=on;
+// per-line padding drückt jede Zeile über die Puffer-Schwelle und erzwingt Auslieferung.
+$tick = static function (string $line): void {
+    echo $line . str_repeat(' ', 4096) . "\n";
+};
+
 $projectRoot = dirname(__DIR__);
 $opmlPath = $projectRoot . '/var/feeds.opml';
 
@@ -43,14 +67,14 @@ foreach ($fetcher->fetchAll(array_keys($byUrl)) as [$url, $body, $error]) {
     $prefix = sprintf('[%d/%d]', $done, $total);
 
     if ($body === null) {
-        fwrite(STDERR, "{$prefix} [FAIL] {$url}: {$error}\n");
+        $tick("{$prefix} [FAIL] {$url}: {$error}<br>");
         continue;
     }
 
     try {
         $entries = $feedParser->parse($body);
     } catch (Throwable $e) {
-        fwrite(STDERR, "{$prefix} [FAIL] {$url}: {$e->getMessage()}\n");
+        $tick("{$prefix} [FAIL] {$url}: {$e->getMessage()}<br>");
         continue;
     }
 
@@ -65,10 +89,11 @@ foreach ($fetcher->fetchAll(array_keys($byUrl)) as [$url, $body, $error]) {
         }
     }
 
-    echo "{$prefix} [OK] {$url} ({$newCount} new)\n";
+    $tick("{$prefix} [OK] {$url} ({$newCount} new)<br>");
 }
 
-printf('Total New Items: %s' . PHP_EOL, $totalCount);
+$tick(sprintf('Total New Items: %d<br>', $totalCount));
 
 $deleted = $repository->deleteOlderThanDays($retentionDays);
-printf('Deleted %d posts older than %d days.' . PHP_EOL, $deleted, $retentionDays);
+$tick(sprintf('Deleted %d posts older than %d days.<br>', $deleted, $retentionDays));
+echo '<a href="/">Home</a> &mdash; <a href="/categorize.php">Klassifizieren</a>';
