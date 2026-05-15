@@ -48,15 +48,17 @@ body {
 }
 
 header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    grid-template-areas:
+            "headline navigation"
+            "options options";
     margin-bottom: 2rem;
 }
 
 header h1 {
+    grid-area: headline;
     margin: 0;
     font-size: 1.4rem;
     font-weight: normal;
@@ -68,9 +70,14 @@ header h1 a {
     text-decoration: none;
 }
 
+header nav {
+    grid-area: navigation;
+    text-align: right;
+}
+
 header form {
-    flex: 1;
-    max-width: 18rem;
+    grid-area: options;
+    text-align: right;
 }
 
 header input[type=search] {
@@ -300,6 +307,26 @@ section.summary > a {
     padding: 0.1rem .7rem;
     border: 1px solid var(--border);
     border-radius: var(--border-radius);
+}
+
+.favorite-toggle {
+    background: none;
+    border: none;
+    padding: 0 .2rem;
+    margin-left: .2rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-hint);
+    line-height: 1;
+    vertical-align: baseline;
+}
+
+.favorite-toggle:hover {
+    color: darkorange;
+}
+
+.favorite-toggle.is-favorite {
+    color: darkorange;
 }
 
 

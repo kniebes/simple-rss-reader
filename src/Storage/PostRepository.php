@@ -65,7 +65,7 @@ final class PostRepository
     public function deleteOlderThanDays(int $days): int
     {
         $cutoff = (new DateTimeImmutable("-{$days} days", new DateTimeZone('UTC')))->format(self::MYSQL_DATETIME);
-        $stmt = $this->pdo->prepare('DELETE FROM simeple_rss_reader_posts WHERE date < :cutoff');
+        $stmt = $this->pdo->prepare('DELETE FROM simeple_rss_reader_posts WHERE date < :cutoff AND is_favorite = 0');
         $stmt->execute([':cutoff' => $cutoff]);
 
         return $stmt->rowCount();
@@ -91,12 +91,20 @@ final class PostRepository
         $stmt->execute([':cat' => $category, ':id' => $id]);
     }
 
-    /**
-     * @return array<string, list<array{id:int,date:string,feed_url:string,blog_url:string,guid:string,permalink:?string,title:string,content:string,status:string,category:?string}>>
-     */
-    public function findGroupedByCategory(?string $status): array
+    public function setFavorite(int $id, bool $favorite): void
     {
-        if ($status === null) {
+        $stmt = $this->pdo->prepare('UPDATE simeple_rss_reader_posts SET is_favorite = :fav WHERE id = :id');
+        $stmt->execute([':fav' => $favorite ? 1 : 0, ':id' => $id]);
+    }
+
+    /**
+     * @return array<string, list<array{id:int,date:string,feed_url:string,blog_url:string,guid:string,permalink:?string,title:string,content:string,status:string,category:?string,is_favorite:int}>>
+     */
+    public function findGroupedByCategory(?string $status, bool $onlyFavorites = false): array
+    {
+        if ($onlyFavorites) {
+            $stmt = $this->pdo->query('SELECT * FROM simeple_rss_reader_posts WHERE is_favorite = 1 ORDER BY date DESC');
+        } elseif ($status === null) {
             $stmt = $this->pdo->query('SELECT * FROM simeple_rss_reader_posts ORDER BY date DESC');
         } else {
             $stmt = $this->pdo->prepare('SELECT * FROM simeple_rss_reader_posts WHERE status = :status ORDER BY date DESC');

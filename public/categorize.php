@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use Kniebes\SimpleRssReader\Category\CategoryList;
 use Kniebes\SimpleRssReader\Category\Classifier;
+use Kniebes\SimpleRssReader\Kernel;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
-use Symfony\Component\Dotenv\Dotenv;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -36,10 +36,7 @@ $tick = static function (string $line): void {
 
 $projectRoot = dirname(__DIR__);
 
-$envFile = $projectRoot . '/.env';
-if (is_file($envFile)) {
-    (new Dotenv())->loadEnv($envFile);
-}
+Kernel::environment();
 
 $apiKey = (string) ($_ENV['ANTHROPIC_API_KEY'] ?? null);
 if (empty($apiKey)) {

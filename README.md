@@ -129,8 +129,10 @@ CREATE TABLE simeple_rss_reader_posts (
     status    ENUM('new','read') NOT NULL DEFAULT 'new',
     category  VARCHAR(64)   NULL,                      -- NULL = noch nicht klassifiziert,
                                                        -- '' = klassifiziert ohne Match
-    INDEX idx_status_date (status, date),
-    INDEX idx_category    (category)
+    is_favorite TINYINT(1)  NOT NULL DEFAULT 0,        -- Lesezeichen; überlebt die 5-Tage-Retention
+    INDEX idx_posts_status_date (status, date),
+    INDEX idx_posts_category    (category),
+    INDEX idx_posts_favorite    (is_favorite)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 

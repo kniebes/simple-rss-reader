@@ -13,10 +13,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $projectRoot = dirname(__DIR__);
 
-$envFile = $projectRoot . '/.env';
-if (is_file($envFile)) {
-    (new Dotenv())->loadEnv($envFile);
-}
+Kernel::environment();
 
 $repository = new PostRepository(Database::open());
 $categories = CategoryList::fromFile($projectRoot . '/var/categories.md');
@@ -28,18 +25,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'mark_
 }
 
 $filter = $_GET['filter'] ?? 'new';
+$onlyFavorites = $filter === 'favorite';
 $status = match ($filter) {
-    'read' => 'read',
-    'all' => null,
-    default => 'new',
+    'favorite' => null,
+    'read'     => 'read',
+    'all'      => null,
+    default    => 'new',
 };
-$filter = match ($status) {
-    'read' => 'read',
-    null => 'all',
-    default => 'new',
+$filter = match (true) {
+    $onlyFavorites     => 'favorite',
+    $status === 'read' => 'read',
+    $status === null   => 'all',
+    default            => 'new',
 };
 
-$grouped = $repository->findGroupedByCategory($status);
+$grouped = $repository->findGroupedByCategory($status, $onlyFavorites);
 $totalCount = array_sum(array_map('count', $grouped));
 
 function e(string $s): string {
@@ -53,6 +53,7 @@ function e(string $s): string {
     <title>Reader</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="stylesheet" href="/assets/css/site.css?<?= Kernel::getFileVersion() ?>">
+    <script defer src="/assets/js/site.js?<?= Kernel::getFileVersion() ?>"></script>
 </head>
 <body>
     <header>
@@ -61,6 +62,7 @@ function e(string $s): string {
             <a class="button<?= $filter === 'new' ? ' active' : '' ?>" href="?filter=new">Neu</a>
             <a class="button<?= $filter === 'read' ? ' active' : '' ?>" href="?filter=read">Gelesen</a>
             <a class="button<?= $filter === 'all' ? ' active' : '' ?>" href="?filter=all">Alle</a>
+            <a class="button<?= $filter === 'favorite' ? ' active' : '' ?>" href="?filter=favorite">★ Favoriten</a>
         </nav>
         <form method="post">
             <a class="button" href="/fetch.php">Fetch</a>
@@ -129,6 +131,13 @@ function e(string $s): string {
                                 <a rel="noreferrer" href="<?= e($post['blog_url']) ?>" target="_blank" rel="noopener">
                                     <?= e(parse_url($post['blog_url'], PHP_URL_HOST) ?? $post['blog_url']) ?>
                                 </a>
+                                <?php $fav = !empty($post['is_favorite']); ?>
+                                <button type="button"
+                                        class="favorite-toggle<?= $fav ? ' is-favorite' : '' ?>"
+                                        data-post-id="<?= (int) $post['id'] ?>"
+                                        aria-pressed="<?= $fav ? 'true' : 'false' ?>"
+                                        aria-label="Favorit"
+                                        title="Favorit"><?= $fav ? '★' : '☆' ?></button>
                             </div>
                         </article>
                     <?php endforeach; ?>

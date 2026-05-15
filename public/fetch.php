@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use Kniebes\SimpleRssReader\Feed\FeedParser;
 use Kniebes\SimpleRssReader\Feed\MultiFeedFetcher;
+use Kniebes\SimpleRssReader\Kernel;
 use Kniebes\SimpleRssReader\Opml\OpmlReader;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
-use Symfony\Component\Dotenv\Dotenv;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -38,10 +38,7 @@ $tick = static function (string $line): void {
 $projectRoot = dirname(__DIR__);
 $opmlPath = $projectRoot . '/var/feeds.opml';
 
-$envFile = $projectRoot . '/.env';
-if (is_file($envFile)) {
-    (new Dotenv())->loadEnv($envFile);
-}
+Kernel::environment();
 
 $opmlReader = new OpmlReader();
 $feedParser = new FeedParser();
