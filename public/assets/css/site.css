@@ -38,8 +38,8 @@ html {
 }
 
 body {
-    font-family: Georgia, "Times New Roman", serif;
-    max-width: 44rem;
+    font: 2.5rem/2.5rem Georgia, "Times New Roman", serif;
+    max-width: 74rem;
     margin: 2rem auto;
     padding: 0 1rem;
     line-height: 1.65;
@@ -97,7 +97,7 @@ h2 {
 }
 
 h3 {
-    font-size: 1rem;
+    font-size: 2.5rem;
     color: var(--text-muted);
     font-weight: 600;
     margin: 0 0 0.8rem;
@@ -116,7 +116,7 @@ h4 {
 }
 
 article {
-    margin: 1.5rem 0;
+    margin: 2.5rem 0;
     padding: 1rem;
     /*border-bottom: 1px solid var(--border);*/
     background-color: var(--bg-article);
@@ -329,4 +329,12 @@ section.summary > a {
     color: darkorange;
 }
 
+@media (max-widtH: 1000px) {
+    body {
+        font-size: 1rem;
+    }
+    h3 {
+        font-size: 1rem
+    }
+}
 
