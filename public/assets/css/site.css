@@ -1,18 +1,20 @@
 :root {
-    --bg: rgb(244,237,225);
-    --bg-elevated: rgb(230,223,212);
-    --bg-code: rgb(236,230,219);
-    --bg-details: rgb(236,230,219);
-    --bg-article: rgb(236,230,219);
+    --bg: lab(96.6189 0.0403821 7.69081);
+    --bg-elevated: oklab(0.769 0.064053 0.176752 / 0.05);
+    --bg-code: oklab(0.769 0.064053 0.176752 / 0.05);
+    --bg-details: oklab(0.769 0.064053 0.176752 / 0.05);
+    --bg-article: oklab(0.769 0.064053 0.176752 / 0.05);
     --bg-button: rgb(200,193,182);
-    --text: #3d2e1f;
+    --bg-accent-hover: lab(86.254 -0.722647 11.5668);
+    --text: lab(42.4984 -10.3838 9.91943);
     --text-muted: #6b5840;
     --text-hint: #8b7355;
-    --border: rgb(220,213,202);
+    --border: oklab(0.769 0.064053);
     --border-subtle: #d8c8a8;
     --accent: #8c3a3a;
-
-    --border-radius: 6px;
+    --accent: lab(47.2709 42.9082 69.2966);
+    --accent-hover: lab(37.8822 37.1699 52.2718);
+    --border-radius: 3px;
     --scanline-opacity: .03;
 }
 
@@ -38,8 +40,8 @@ html {
 }
 
 body {
-    font: 2.5rem/2.5rem Georgia, "Times New Roman", serif;
-    max-width: 74rem;
+    font: 1.1rem/2.0rem IBM Plex Mono, ui-monospace, monospace;
+    max-width: 54rem;
     margin: 2rem auto;
     padding: 0 1rem;
     line-height: 1.65;
@@ -97,7 +99,7 @@ h2 {
 }
 
 h3 {
-    font-size: 2.5rem;
+    font-size: 1.4rem;
     color: var(--text-muted);
     font-weight: 600;
     margin: 0 0 0.8rem;
@@ -118,10 +120,9 @@ h4 {
 article {
     margin: 2.5rem 0;
     padding: 1rem;
-    /*border-bottom: 1px solid var(--border);*/
     background-color: var(--bg-article);
     border-radius: var(--border-radius);
-
+    box-shadow: 1px 1px 4px rgba(0,0,0,.3);
 }
 
 article h3 a {
@@ -165,6 +166,7 @@ blockquote {
 
 a {
     color: var(--accent);
+    text-decoration: none;
 }
 
 p > img {
@@ -273,7 +275,7 @@ hr {
 }
 
 button, .button {
-    background: var(--bg-button);
+    background: var(--bg-accent-hover);
     color: #000;
     border-radius: var(--border-radius);
     padding: .2rem .4rem;
@@ -305,8 +307,13 @@ section.summary > a {
     display: inline-block;
     text-decoration: none;
     padding: 0.1rem .7rem;
-    border: 1px solid var(--border);
     border-radius: var(--border-radius);
+    color: var(--accent);
+}
+
+section.summary > a:hover {
+    background-color: var(--bg-accent-hover);
+    color: var(--accent-hover);
 }
 
 .favorite-toggle {
@@ -337,4 +344,3 @@ section.summary > a {
         font-size: 1rem
     }
 }
-
