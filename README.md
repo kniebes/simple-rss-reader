@@ -139,7 +139,7 @@ src/
 var/
   feeds.opml.example         # Vorlage → nach feeds.opml kopieren (gitignored)
   categories.md.example      # Vorlage → nach categories.md kopieren (gitignored)
-deployment.php               # FTP-Deployment-Konfig (dg/ftp-deployment)
+deployment.php.dist          # Vorlage → nach deployment.php kopieren (gitignored)
 ```
 
 ## DB-Schema
@@ -183,21 +183,20 @@ verkraftbar.
 
 ## Deployment
 
-Produktion läuft auf einem Shared-Host, Deployment über
-[`dg/ftp-deployment`](https://github.com/dg/ftp-deployment). Konfiguration
-in `deployment.php` (gitignored — enthält FTPS-Credentials im Klartext);
-`temp/` ist der Arbeits-Cache des Deployers, `var/deployment.log` das
-Lauf-Log.
+Falls der Reader über einen Shared Host läuft, kann das Projekt über
+[`dg/ftp-deployment`](https://github.com/dg/ftp-deployment) deployed werden. 
+Die Konfiguration liegt in `deployment.php`. Als Vorlage dient `deployment.php.dist`. 
+Einfach kopieren und die FTPS-Zugangsdaten eintragen:  
+
+```sh
+cp deployment.php.dist deployment.php
+```
+
+`temp/` ist der Arbeits-Cache des Deployers, `var/deployment.log` das Lauf-Log.
 
 ```sh
 vendor/bin/deployment deployment.php
 ```
-
-`deployment.php` listet die zu deployenden Pfade (`/public`, `/src`,
-`/vendor`, `/var`, `.env`) und ignoriert u. a. `.git*`, `temp/*` und
-`/deployment.*`. Auf dem Shared-Host gibt es keine CLI — `fetch.php` und
-`categorize.php` werden dort über die Web-URLs angestoßen (Cron oder
-manuell).
 
 ## Sicherheit
 
@@ -224,9 +223,6 @@ möglich):
 ```sh
 htpasswd -c /absoluter/pfad/zu/.htpasswd deinbenutzer
 ```
-
-`.htaccess`/`.htpasswd` gehören **nicht** ins Repo — Credentials bleiben lokal
-bzw. auf dem Server.
 
 ## Caveats
 

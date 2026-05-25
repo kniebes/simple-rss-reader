@@ -1,0 +1,51 @@
+<?php
+declare(strict_types=1);
+
+return [
+	'my site' => [
+        'remote' => 'ftps://<username>:<password>@example.com/<path>',
+		'local' => '.',
+		'test' => false,
+		'ignore' => '
+		    .git*
+		    *.html
+			/deployment.*
+			/log
+			temp/*
+			!temp/.htaccess
+			*/tests
+			/files/photodomain
+			/schema
+			/var/deployment.log
+		',
+
+		'include' => '
+        	/public
+        	/src
+        	/vendor
+        	/var 
+            .env 
+        ',
+
+		'allowDelete' => true,
+		'before' => [
+			function (Deployment\Server $server, Deployment\Logger $logger, Deployment\Deployer $deployer) {
+				$logger->log('Hello!');
+			},
+		],
+		'afterUpload' => [
+//			'http://example.com/deployment.php?afterUpload',
+		],
+		'after' => [
+//			'http://example.com/deployment.php?after',
+		],
+		'purge' => [
+//			'public/blogroll.html',
+		],
+//		'preprocess' => ['combined.js', 'combined.css'],
+	],
+
+	'tempDir' => __DIR__ . '/temp',
+	'colors' => true,
+    'log' => __DIR__ . '/var/deployment.log',
+];
