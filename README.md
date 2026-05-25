@@ -43,6 +43,21 @@ ANTHROPIC_API_KEY=sk-ant-...
 DATABASE_URL="mysql://db:db@db:3306/db"
 ```
 
+Den `ANTHROPIC_API_KEY` gibt es **nicht** in den Einstellungen der Claude-Chat-App
+(claude.ai) — die API ist ein eigenes, davon getrenntes Produkt mit eigener,
+nutzungsbasierter Abrechnung (Guthaben/Credits), unabhängig von einem etwaigen
+Claude-Pro-Abo. Den Key erstellst du in der **Anthropic Console**:
+
+1. Auf <https://console.anthropic.com> einloggen (ggf. Account anlegen).
+2. Unter *Billing* etwas Guthaben aufladen — ohne Credits liefert die API einen
+   Fehler.
+3. Unter *API keys* → *Create Key* einen Key erzeugen und in `.env` eintragen.
+   Der Key wird nur einmal angezeigt.
+
+Nur `public/categorize.php` braucht den Key (für die Klassifizierung via Claude).
+Ohne Key funktioniert der Reader trotzdem — die Posts landen dann alle unter
+„Nicht kategorisiert".
+
 `DATABASE_URL` zeigt per Default auf den DDEV-MariaDB-Container (Host `db`,
 User/Pass/Datenbank jeweils `db`). Anpassen nur, wenn du gegen eine andere
 MySQL-/MariaDB-Instanz fahren willst. `.env.example` enthält die Templates.
