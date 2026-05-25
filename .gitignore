@@ -4,6 +4,10 @@
 
 /var/deployment.log
 
+# Persönliche Eingabedaten — getrackt sind nur die *.example-Vorlagen.
+/var/feeds.opml
+/var/categories.md
+
 .DS_Store
 .idea/
 .vscode/

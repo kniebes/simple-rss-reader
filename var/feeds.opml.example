@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Beispiel-OPML. Nach var/feeds.opml kopieren und mit eigenen Feeds füllen
+     (z. B. Export aus NetNewsWire o. ä.). Verschachtelte <outline>-Gruppen
+     dienen nur der Ordner-Struktur; gelesen wird jedes xmlUrl. -->
+<opml version="1.1">
+	<head>
+		<title>Feeds</title>
+	</head>
+	<body>
+		<outline text="web" title="web">
+			<outline text="A List Apart" title="A List Apart" description="" type="rss" version="RSS" htmlUrl="https://alistapart.com" xmlUrl="https://alistapart.com/main/feed/"/>
+			<outline text="CSS-Tricks" title="CSS-Tricks" description="" type="rss" version="RSS" htmlUrl="https://css-tricks.com/" xmlUrl="https://css-tricks.com/feed/"/>
+			<outline text="W3C - Blog" title="W3C - Blog" description="" type="rss" version="RSS" htmlUrl="https://www.w3.org/blog/" xmlUrl="https://www.w3.org/blog/feed/"/>
+		</outline>
+		<outline text="tech" title="tech">
+			<outline text="OSnews" title="OSnews" description="" type="rss" version="RSS" htmlUrl="https://www.osnews.com/" xmlUrl="https://www.osnews.com/feed/"/>
+			<outline text="Hacker News" title="Hacker News" description="" type="rss" version="RSS" htmlUrl="https://news.ycombinator.com/" xmlUrl="https://hnrss.org/frontpage"/>
+		</outline>
+	</body>
+</opml>

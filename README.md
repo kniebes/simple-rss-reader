@@ -4,8 +4,7 @@ Minimaler PHP-RSS-Reader. Lädt Feeds aus einer OPML-Datei, speichert Entries in
 MariaDB (DDEV-Container), klassifiziert sie optional per Claude in Kategorien
 und zeigt sie über eine einzelne `index.php` an.
 
-- **Dev:** <https://simple-rss-reader.ddev.site/>
-- **Prod:** <https://reader.example.com/>
+Lokal erreichbar unter der DDEV-URL (Default: <https://simple-rss-reader.ddev.site/>).
 
 ## Voraussetzungen
 
@@ -19,6 +18,15 @@ und zeigt sie über eine einzelne `index.php` an.
 ```sh
 ddev start
 ddev composer install
+```
+
+Die beiden Eingabedateien `var/feeds.opml` und `var/categories.md` sind
+gitignored (persönliche Daten) — getrackt sind nur die Vorlagen. Zum Start
+kopieren:
+
+```sh
+cp var/feeds.opml.example var/feeds.opml
+cp var/categories.md.example var/categories.md
 ```
 
 Feeds werden aus `var/feeds.opml` gelesen. OPML aus deinem Feed-Reader (z. B.
@@ -114,8 +122,8 @@ src/
   Storage/PostRepository.php # UPSERT, findByStatus, findGroupedByCategory, markAllRead, …
   Util/Text.php              # HTML → Plain-Text Excerpt
 var/
-  feeds.opml                 # Input
-  categories.md              # Input (nur für den Classifier)
+  feeds.opml.example         # Vorlage → nach feeds.opml kopieren (gitignored)
+  categories.md.example      # Vorlage → nach categories.md kopieren (gitignored)
 deployment.php               # FTP-Deployment-Konfig (dg/ftp-deployment)
 ```
 
@@ -160,7 +168,7 @@ verkraftbar.
 
 ## Deployment
 
-Produktion läuft auf einem Shared-Host (`reader.example.com`), Deployment über
+Produktion läuft auf einem Shared-Host, Deployment über
 [`dg/ftp-deployment`](https://github.com/dg/ftp-deployment). Konfiguration
 in `deployment.php` (gitignored — enthält FTPS-Credentials im Klartext);
 `temp/` ist der Arbeits-Cache des Deployers, `var/deployment.log` das

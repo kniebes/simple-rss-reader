@@ -1,0 +1,11 @@
+<!-- Beispiel-Kategorien. Nach var/categories.md kopieren und anpassen.
+     Format pro Zeile: `- Name: Beschreibung`. Die Beschreibung geht 1:1 in
+     den System-Prompt des Classifiers und entscheidet, was in eine Kategorie
+     fällt. -->
+- Web: Weblogs, Indieweb, Fediverse, HTML/CSS, Webstandards
+- Softwareentwicklung: Sprachen, Frameworks, Tooling, OOP, Agile
+- Devops: Container, lokale Entwicklungsumgebung, Deployment
+- Fotografie: Technik, Equipment, Landschaft, Photoblogs
+- Musik: Genres, Alben, Labels, Konzerte
+- Unterhaltung: Filme, Serien, SciFi, Fantasy
+- Politik: Demokratie, Gesetze, Bundesregierung
