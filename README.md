@@ -80,21 +80,28 @@ und werden in der UI unter „Nicht kategorisiert" gesammelt.
 - `?filter=new` (Default) — ungelesene Posts
 - `?filter=read` — gelesene Posts
 - `?filter=all` — alle Posts
+- `?filter=favorite` — als Favorit markierte Posts (status-unabhängig)
 - Sektionen kommen aus den DB-vorhandenen Kategorien. `categories.md` dient
   nur als Sortier-Hint: bekannte Kategorien erscheinen in der dort
   definierten Reihenfolge, abweichende DB-Kategorien danach alphabetisch.
   „Nicht kategorisiert" (`category` ist `NULL` oder `''`) steht am Ende.
 - Button „Alle als gelesen markieren" setzt jeden `new`-Post auf `read`.
 - Nav-Link „Fetch" triggert `/fetch.php` direkt aus der UI.
+- Der ☆/★-Button an jedem Post toggelt den Favoriten-Status per Fetch-Request
+  an `/favorite.php` (JS in `public/assets/js/site.js`). Favoriten überleben die
+  5-Tage-Retention (`is_favorite = 1` ist vom Retention-DELETE ausgenommen).
 
 ## Struktur
 
 ```
 public/
-  index.php                  # Web: Liste + Filter + Kategorie-Gruppierung + Mark-all-read
+  index.php                  # Web: Liste + Filter (inkl. Favoriten) + Kategorie-Gruppierung + Mark-all-read
   fetch.php                  # OPML → Feeds parallel laden → DB schreiben → Retention
   categorize.php             # ungelabelte Posts an Anthropic API → category setzen
+  favorite.php               # POST-Endpoint: is_favorite togglen (von site.js aufgerufen)
+  assets/js/site.js          # Favoriten-Toggle (Fetch an favorite.php)
 src/
+  Kernel.php                 # .env laden (Dotenv) + Cache-Busting-Version für Assets
   Feed/Feed.php              # Value Object (feedUrl, blogUrl)
   Feed/Entry.php             # Value Object (date, permalink, title, content)
   Feed/FeedParser.php        # RSS 2.0 + Atom 1.0 via SimpleXML

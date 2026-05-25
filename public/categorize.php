@@ -38,15 +38,15 @@ $projectRoot = dirname(__DIR__);
 
 Kernel::environment();
 
-$apiKey = (string) ($_ENV['ANTHROPIC_API_KEY'] ?? null);
-if (empty($apiKey)) {
-    fwrite(STDERR, "ANTHROPIC_API_KEY is not set. Hinterlege ihn in .env / .env.local oder als ENV-Variable.\n");
+$apiKey = (string) ($_ENV['ANTHROPIC_API_KEY'] ?? '');
+if ($apiKey === '') {
+    $tick('[FAIL] ANTHROPIC_API_KEY is not set. Hinterlege ihn in .env / .env.local oder als ENV-Variable.<br>');
     exit(1);
 }
 
 $categories = CategoryList::fromFile($projectRoot . '/var/categories.md');
 if ($categories->all() === []) {
-    fwrite(STDERR, "var/categories.md ist leer oder enthält keine gültigen Einträge.\n");
+    $tick('[FAIL] var/categories.md ist leer oder enthält keine gültigen Einträge.<br>');
     exit(1);
 }
 

@@ -42,8 +42,14 @@ $filter = match (true) {
 $grouped = $repository->findGroupedByCategory($status, $onlyFavorites);
 $totalCount = array_sum(array_map('count', $grouped));
 
-function e(string $s): string {
-    return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+function escape(string $value): string {
+    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function isSafeUrl(string $url): bool {
+    // Nur absolute http(s)- oder protokoll-relative URLs als Link rendern —
+    // verhindert javascript:/data:-Permalinks aus fremden Feeds.
+    return preg_match('#^(https?://|//)#i', $url) === 1;
 }
 
 ?><!doctype html>
@@ -98,13 +104,13 @@ function e(string $s): string {
 
         <section class="summary">
             <?php foreach ($sections as $section): ?>
-                <a href="#<?= md5($section['title']) ?>"><?= e($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></a>
+                <a href="#<?= md5($section['title']) ?>"><?= escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></a>
             <?php endforeach; ?>
         </section>
 
         <?php foreach ($sections as $section): ?>
             <section>
-                <h2 id="<?= md5($section['title']) ?>"><?= e($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></h2>
+                <h2 id="<?= md5($section['title']) ?>"><?= escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></h2>
                     <?php foreach ($section['posts'] as $post): ?>
                         <article>
                             <h3 class="<?= $post['status'] === 'new' ? 'new' : '' ?>">
@@ -113,23 +119,23 @@ function e(string $s): string {
                                     ? $post['title']
                                     : ($post['permalink'] ?? $post['blog_url']);
                                 ?>
-                                <?php if ($post['permalink'] !== null && $post['permalink'] !== ''): ?>
-                                    <a rel="noreferrer" href="<?= e($post['permalink']) ?>" target="_blank" rel="noopener">
-                                        <?= e($label) ?>
+                                <?php if ($post['permalink'] !== null && isSafeUrl($post['permalink'])): ?>
+                                    <a rel="noopener noreferrer" href="<?= escape($post['permalink']) ?>" target="_blank">
+                                        <?= escape($label) ?>
                                     </a>
                                 <?php else: ?>
-                                    <?= e($label) ?>
+                                    <?= escape($label) ?>
                                 <?php endif; ?>
                             </h3>
                             <?php $exc = Text::excerpt($post['content'] ?? ''); ?>
                             <?php if ($exc !== ''): ?>
-                                <div class="excerpt"><?= e($exc) ?></div>
+                                <div class="excerpt"><?= escape($exc) ?></div>
                             <?php endif; ?>
                             <div class="meta">
-                                <?= e((new DateTimeImmutable($post['date'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Berlin'))->format('Y-m-d H:i')) ?>
+                                <?= escape((new DateTimeImmutable($post['date'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Berlin'))->format('Y-m-d H:i')) ?>
                                 ·
-                                <a rel="noreferrer" href="<?= e($post['blog_url']) ?>" target="_blank" rel="noopener">
-                                    <?= e(parse_url($post['blog_url'], PHP_URL_HOST) ?? $post['blog_url']) ?>
+                                <a rel="noopener noreferrer" href="<?= escape($post['blog_url']) ?>" target="_blank">
+                                    <?= escape(parse_url($post['blog_url'], PHP_URL_HOST) ?? $post['blog_url']) ?>
                                 </a>
                                 <?php $fav = !empty($post['is_favorite']); ?>
                                 <button type="button"

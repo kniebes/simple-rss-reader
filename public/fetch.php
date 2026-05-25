@@ -76,17 +76,25 @@ foreach ($fetcher->fetchAll(array_keys($byUrl)) as [$url, $body, $error]) {
     }
 
     $newCount = 0;
+    $skipped = 0;
     foreach ($entries as $entry) {
         if ($entry->date < $cutoff) {
             continue;
         }
-        if ($repository->insertIgnore($entry, $feed)) {
-            $newCount++;
-            $totalCount++;
+        try {
+            if ($repository->insertIgnore($entry, $feed)) {
+                $newCount++;
+                $totalCount++;
+            }
+        } catch (Throwable $e) {
+            // Einzelnes Item überspringen statt den ganzen Lauf abzubrechen —
+            // z. B. guid/permalink länger als die Spalte (strict mode wirft).
+            $skipped++;
         }
     }
 
-    $tick("{$prefix} [OK] {$url} ({$newCount} new)<br>");
+    $note = $skipped > 0 ? " ({$newCount} new, {$skipped} skipped)" : " ({$newCount} new)";
+    $tick("{$prefix} [OK] {$url}{$note}<br>");
 }
 
 $tick(sprintf('Total New Items: %d<br>', $totalCount));
