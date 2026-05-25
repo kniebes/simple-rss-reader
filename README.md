@@ -199,6 +199,35 @@ vendor/bin/deployment deployment.php
 `categorize.php` werden dort über die Web-URLs angestoßen (Cron oder
 manuell).
 
+## Sicherheit
+
+**Die App bringt keine eigene Authentifizierung mit — alle Endpoints sind
+offen.** Bei jeder öffentlich erreichbaren Installation gehört davor ein
+Zugriffsschutz, z. B. HTTP Basic Auth. Sonst kann jeder Besucher die
+Endpoints triggern, und besonders `categorize.php` ruft die Anthropic-API auf
+und verursacht damit **echte Kosten** (dein API-Guthaben) — ein offener
+`categorize.php`-Endpoint ist effektiv ein Geld-Leck. Auch `fetch.php`
+schreibt in die DB und löscht alte Posts.
+
+Auf Apache reicht eine `.htaccess` im Document-Root (`public/`):
+
+```apacheconf
+AuthType Basic
+AuthName "Restricted"
+AuthUserFile /absoluter/pfad/zu/.htpasswd
+Require valid-user
+```
+
+Die `.htpasswd` daneben anlegen (außerhalb des Document-Roots ablegen, wenn
+möglich):
+
+```sh
+htpasswd -c /absoluter/pfad/zu/.htpasswd deinbenutzer
+```
+
+`.htaccess`/`.htpasswd` gehören **nicht** ins Repo — Credentials bleiben lokal
+bzw. auf dem Server.
+
 ## Caveats
 
 - **Kaputte Feeds werden übersprungen.** Beispiel: `blogs.nabu.de/feed/`
