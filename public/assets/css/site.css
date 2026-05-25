@@ -18,6 +18,38 @@
     --scanline-opacity: .03;
 }
 
+@font-face {
+    font-family: IBM Plex Mono;
+    src: url(/assets/fonts/IBMPlexMono-Regular.woff2) format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display:swap
+}
+
+@font-face {
+    font-family: IBM Plex Mono;
+    src: url(/assets/fonts/IBMPlexMono-Medium.woff2) format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display:swap
+}
+
+@font-face {
+    font-family: IBM Plex Mono;
+    src: url(/assets/fonts/IBMPlexMono-SemiBold.woff2) format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display:swap
+}
+
+@font-face {
+    font-family: IBM Plex Mono;
+    src: url(/assets/fonts/IBMPlexMono-Bold.woff2) format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display:swap
+}
+
 * {
     border: 0;
     font-family: inherit;
