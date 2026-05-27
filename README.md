@@ -79,7 +79,7 @@ Oder im Browser: `https://simple-rss-reader.ddev.site/fetch.php` (auch
 verlinkt als „Fetch" in der Navigation).
 
 Lädt alle Feeds parallel (curl_multi, bis zu 10 gleichzeitig), schreibt neue
-Entries in die DB-Tabelle `simeple_rss_reader_posts` (muss vorher manuell
+Entries in die DB-Tabelle `simple_rss_reader_posts` (muss vorher manuell
 angelegt werden, siehe [DB-Schema](#db-schema)) und löscht am Ende Posts, die
 älter als 5 Tage sind. Dedup läuft über `guid` (RSS `<guid>` bzw. Atom `<id>`,
 Fallback `<link>`); bei Bestandsposts wird ein noch leerer `content` einmalig
@@ -114,38 +114,10 @@ und werden in der UI unter „Nicht kategorisiert" gesammelt.
   an `/favorite.php` (JS in `public/assets/js/site.js`). Favoriten überleben die
   5-Tage-Retention (`is_favorite = 1` ist vom Retention-DELETE ausgenommen).
 
-## Struktur
-
-```
-public/
-  index.php                  # Web: Liste + Filter (inkl. Favoriten) + Kategorie-Gruppierung + Mark-all-read
-  fetch.php                  # OPML → Feeds parallel laden → DB schreiben → Retention
-  categorize.php             # ungelabelte Posts an Anthropic API → category setzen
-  favorite.php               # POST-Endpoint: is_favorite togglen (von site.js aufgerufen)
-  assets/js/site.js          # Favoriten-Toggle (Fetch an favorite.php)
-src/
-  Kernel.php                 # .env laden (Dotenv) + Cache-Busting-Version für Assets
-  Feed/Feed.php              # Value Object (feedUrl, blogUrl)
-  Feed/Entry.php             # Value Object (date, permalink, title, content)
-  Feed/FeedParser.php        # RSS 2.0 + Atom 1.0 via SimpleXML
-  Feed/MultiFeedFetcher.php  # curl_multi, parallel mit Timeout + Redirects
-  Opml/OpmlReader.php        # rekursiver OPML-Reader
-  Category/Category.php      # Value Object (name, description, relevance)
-  Category/CategoryList.php  # Parser für var/categories.md
-  Category/Classifier.php    # Anthropic Messages API (Haiku 4.5) + Prompt-Caching
-  Storage/Database.php       # PDO/MySQL-Verbindung aus DATABASE_URL (parsed URL → DSN)
-  Storage/PostRepository.php # UPSERT, findByStatus, findGroupedByCategory, markAllRead, …
-  Util/Text.php              # HTML → Plain-Text Excerpt
-var/
-  feeds.opml.example         # Vorlage → nach feeds.opml kopieren (gitignored)
-  categories.md.example      # Vorlage → nach categories.md kopieren (gitignored)
-deployment.php.dist          # Vorlage → nach deployment.php kopieren (gitignored)
-```
-
 ## DB-Schema
 
 ```sql
-CREATE TABLE simeple_rss_reader_posts (
+CREATE TABLE simple_rss_reader_posts (
     id        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     date      DATETIME      NOT NULL,                  -- intern UTC, Anzeige in Europe/Berlin
     feed_url  VARCHAR(2048) NOT NULL,
@@ -171,11 +143,11 @@ ersten Setup (oder nach Schema-Änderungen) das `CREATE TABLE` direkt im
 DDEV-Container ausführen:
 
 ```sh
-ddev mysql -e "DROP TABLE IF EXISTS simeple_rss_reader_posts; CREATE TABLE simeple_rss_reader_posts (...);"
+ddev mysql -e "DROP TABLE IF EXISTS simple_rss_reader_posts; CREATE TABLE simple_rss_reader_posts (...);"
 ddev exec php public/fetch.php
 ```
 
-Der Tabellen-Name (`simeple_rss_reader_posts`) trägt ein Projekt-Präfix, weil
+Der Tabellen-Name (`simple_rss_reader_posts`) trägt ein Projekt-Präfix, weil
 dieselbe DB auf dem Shared-Host produktiv mit anderen Projekten geteilt wird.
 
 Die 5-Tages-Retention macht ein gelegentliches `DROP` + Re-Fetch

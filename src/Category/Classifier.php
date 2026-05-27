@@ -18,7 +18,7 @@ final class Classifier
         private readonly CategoryList $categories,
     ) {
         if ($this->apiKey === '') {
-            throw new RuntimeException('ANTHROPIC_API_KEY is empty');
+            throw new RuntimeException('ANTHROPIC_API_KEY ist nicht gesetzt. Hinterlege ihn in .env / .env.local oder als ENV-Variable.');
         }
     }
 
@@ -56,15 +56,15 @@ final class Classifier
 
     private function buildSystemPrompt(): string
     {
-        $lines = ["Du klassifizierst Blog-Posts in genau eine der folgenden Kategorien:\n"];
-        foreach ($this->categories->all() as $cat) {
-            $lines[] = "- {$cat->name}: {$cat->description}";
+        $lines = ['Du klassifizierst Blog-Posts in genau eine der folgenden Kategorien:' . "\n"];
+        foreach ($this->categories->all() as $category) {
+            $lines[] = '- ' . $category->name . ': ' . $category->description;
         }
-        $lines[] = "";
-        $lines[] = "Antworte ausschließlich mit einem JSON-Array. Jedes Element hat das Schema:";
+        $lines[] = '';
+        $lines[] = 'Antworte ausschließlich mit einem JSON-Array. Jedes Element hat das Schema:';
         $lines[] = '{"id": <int>, "category": "<exakter Kategorie-Name oder null>"}';
-        $lines[] = "Wenn kein Match klar ist, setze category auf null.";
-        $lines[] = "Keine Kommentare, kein Markdown, keine Code-Fences. Nur das JSON-Array.";
+        $lines[] = 'Wenn kein Match klar ist, setze category auf null.';
+        $lines[] = 'Keine Kommentare, kein Markdown, keine Code-Fences. Nur das JSON-Array.';
 
         return implode("\n", $lines);
     }
@@ -83,7 +83,7 @@ final class Classifier
                 'source' => parse_url($post['blog_url'], PHP_URL_HOST) ?: $post['blog_url'],
             ];
         }
-        return "Klassifiziere folgende Posts:\n\n" . json_encode($items, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        return 'Klassifiziere folgende Posts:' . "\n\n" . json_encode($items, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     }
 
     /**
@@ -147,13 +147,13 @@ final class Classifier
         curl_close($ch);
 
         if ($body === false) {
-            throw new RuntimeException("Anthropic API request failed: {$err}");
+            throw new RuntimeException('Anthropic API request failed: ' . $err);
         }
         if ($status < 200 || $status >= 300) {
-            throw new RuntimeException("Anthropic API HTTP {$status}: " . substr((string) $body, 0, 500));
+            throw new RuntimeException('Anthropic API HTTP ' . $status . ': ' . substr($body, 0, 500));
         }
 
-        $decoded = json_decode((string) $body, true);
+        $decoded = json_decode($body, true);
         if (!is_array($decoded)) {
             throw new RuntimeException('Anthropic API returned non-JSON body');
         }

@@ -18,10 +18,9 @@ final class CategoryList
     public static function fromFile(string $path): self
     {
         if (!is_readable($path)) {
-            throw new RuntimeException("categories file not readable: {$path}");
+            throw new RuntimeException('categories file not readable: ' . $path);
         }
 
-        $relevance = 0;
         $categories = [];
         foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
             $line = trim($line);
@@ -40,7 +39,7 @@ final class CategoryList
             if ($name === '') {
                 continue;
             }
-            $categories[] = new Category(name: $name, description: $description, relevance: $relevance++);
+            $categories[] = new Category(name: $name, description: $description);
         }
 
         return new self($categories);
@@ -59,13 +58,13 @@ final class CategoryList
      */
     public function names(): array
     {
-        return array_map(static fn (Category $c) => $c->name, $this->categories);
+        return array_map(static fn (Category $category) => $category->name, $this->categories);
     }
 
     public function has(string $name): bool
     {
-        foreach ($this->categories as $c) {
-            if ($c->name === $name) {
+        foreach ($this->categories as $category) {
+            if ($category->name === $name) {
                 return true;
             }
         }

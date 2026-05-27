@@ -21,10 +21,10 @@ final class PostRepository
     public function insertIgnore(Entry $entry, Feed $feed): bool
     {
         $stmt = $this->pdo->prepare(<<<'SQL'
-            INSERT INTO simeple_rss_reader_posts (date, feed_url, blog_url, guid, permalink, title, content, status)
+            INSERT INTO simple_rss_reader_posts (date, feed_url, blog_url, guid, permalink, title, content, status)
             VALUES (:date, :feed_url, :blog_url, :guid, :permalink, :title, :content, 'new')
             ON DUPLICATE KEY UPDATE
-                content = IF(simeple_rss_reader_posts.content = '' AND VALUES(content) <> '', VALUES(content), simeple_rss_reader_posts.content)
+                content = IF(simple_rss_reader_posts.content = '' AND VALUES(content) <> '', VALUES(content), simple_rss_reader_posts.content)
         SQL);
         $stmt->execute([
             ':date' => $entry->date->setTimezone(new DateTimeZone('UTC'))->format(self::MYSQL_DATETIME),
@@ -39,24 +39,9 @@ final class PostRepository
         return $stmt->rowCount() > 0;
     }
 
-    /**
-     * @return list<array{id:int,date:string,feed_url:string,blog_url:string,guid:string,permalink:?string,title:string,status:string}>
-     */
-    public function findByStatus(?string $status): array
-    {
-        if ($status === null) {
-            $stmt = $this->pdo->query('SELECT * FROM simeple_rss_reader_posts ORDER BY date DESC');
-        } else {
-            $stmt = $this->pdo->prepare('SELECT * FROM simeple_rss_reader_posts WHERE status = :status ORDER BY date DESC');
-            $stmt->execute([':status' => $status]);
-        }
-
-        return $stmt->fetchAll();
-    }
-
     public function markAllRead(): int
     {
-        $stmt = $this->pdo->prepare("UPDATE simeple_rss_reader_posts SET status = 'read' WHERE status = 'new'");
+        $stmt = $this->pdo->prepare("UPDATE simple_rss_reader_posts SET status = 'read' WHERE status = 'new'");
         $stmt->execute();
 
         return $stmt->rowCount();
@@ -65,7 +50,7 @@ final class PostRepository
     public function deleteOlderThanDays(int $days): int
     {
         $cutoff = (new DateTimeImmutable("-{$days} days", new DateTimeZone('UTC')))->format(self::MYSQL_DATETIME);
-        $stmt = $this->pdo->prepare('DELETE FROM simeple_rss_reader_posts WHERE date < :cutoff AND is_favorite = 0');
+        $stmt = $this->pdo->prepare('DELETE FROM simple_rss_reader_posts WHERE date < :cutoff AND is_favorite = 0');
         $stmt->execute([':cutoff' => $cutoff]);
 
         return $stmt->rowCount();
@@ -76,7 +61,7 @@ final class PostRepository
      */
     public function findUncategorized(int $limit = 0): array
     {
-        $sql = "SELECT id, title, content, blog_url FROM simeple_rss_reader_posts WHERE category IS NULL AND status = 'new' ORDER BY date DESC";
+        $sql = "SELECT id, title, content, blog_url FROM simple_rss_reader_posts WHERE category IS NULL AND status = 'new' ORDER BY date DESC";
         if ($limit > 0) {
             $sql .= ' LIMIT ' . $limit;
         }
@@ -87,13 +72,13 @@ final class PostRepository
 
     public function setCategory(int $id, ?string $category): void
     {
-        $stmt = $this->pdo->prepare('UPDATE simeple_rss_reader_posts SET category = :cat WHERE id = :id');
+        $stmt = $this->pdo->prepare('UPDATE simple_rss_reader_posts SET category = :cat WHERE id = :id');
         $stmt->execute([':cat' => $category, ':id' => $id]);
     }
 
     public function setFavorite(int $id, bool $favorite): void
     {
-        $stmt = $this->pdo->prepare('UPDATE simeple_rss_reader_posts SET is_favorite = :fav WHERE id = :id');
+        $stmt = $this->pdo->prepare('UPDATE simple_rss_reader_posts SET is_favorite = :fav WHERE id = :id');
         $stmt->execute([':fav' => $favorite ? 1 : 0, ':id' => $id]);
     }
 
@@ -103,11 +88,11 @@ final class PostRepository
     public function findGroupedByCategory(?string $status, bool $onlyFavorites = false): array
     {
         if ($onlyFavorites) {
-            $stmt = $this->pdo->query('SELECT * FROM simeple_rss_reader_posts WHERE is_favorite = 1 ORDER BY date DESC');
+            $stmt = $this->pdo->query('SELECT * FROM simple_rss_reader_posts WHERE is_favorite = 1 ORDER BY date DESC');
         } elseif ($status === null) {
-            $stmt = $this->pdo->query('SELECT * FROM simeple_rss_reader_posts ORDER BY date DESC');
+            $stmt = $this->pdo->query('SELECT * FROM simple_rss_reader_posts ORDER BY date DESC');
         } else {
-            $stmt = $this->pdo->prepare('SELECT * FROM simeple_rss_reader_posts WHERE status = :status ORDER BY date DESC');
+            $stmt = $this->pdo->prepare('SELECT * FROM simple_rss_reader_posts WHERE status = :status ORDER BY date DESC');
             $stmt->execute([':status' => $status]);
         }
 

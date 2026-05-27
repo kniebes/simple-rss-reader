@@ -38,13 +38,6 @@ $projectRoot = dirname(__DIR__);
 
 Kernel::environment();
 
-$apiKey = (string) ($_ENV['ANTHROPIC_API_KEY'] ?? '');
-if ($apiKey === '') {
-    $tick('[FAIL] ANTHROPIC_API_KEY is not set. Hinterlege ihn in .env / .env.local oder als ENV-Variable.<br>');
-    echo '<a href="/">Home</a>';
-    exit(1);
-}
-
 $categories = CategoryList::fromFile($projectRoot . '/var/categories.md');
 if ($categories->all() === []) {
     $tick('[FAIL] var/categories.md ist leer oder enthält keine gültigen Einträge.<br>');
@@ -54,13 +47,15 @@ if ($categories->all() === []) {
 
 try {
     $repository = new PostRepository(Database::open());
+    $classifier = new Classifier(
+        apiKey: (string) ($_ENV['ANTHROPIC_API_KEY'] ?? ''),
+        categories: $categories,
+    );
 } catch (Throwable $e) {
-    $tick('[FATAL] DB connection: ' . $e->getMessage() . '<br>');
+    $tick('[FATAL] ' . $e->getMessage() . '<br>');
     echo '<a href="/">Home</a>';
     exit(1);
 }
-
-$classifier = new Classifier(apiKey: $apiKey, categories: $categories);
 
 $batchSize = 25;
 $totalClassified = 0;
@@ -106,8 +101,8 @@ while (true) {
         }
     }
 
-    $tick("[OK] batch of " . count($batch) . " classified (running total: {$totalClassified} matched, {$totalNull} null)<br>");
+    $tick('[OK] batch of ' . count($batch) . ' classified (running total: ' . $totalClassified . ' matched, ' . $totalNull . ' null)<br>');
 }
 
-$tick("Done. {$totalClassified} matched, {$totalNull} without match.<br>");
+$tick('Done. ' . $totalClassified . ' matched, ' . $totalNull . ' without match.<br>');
 echo '<a href="/">Home</a>';

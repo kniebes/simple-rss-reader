@@ -30,7 +30,7 @@ final class FeedParser
             return match ($name) {
                 'rss' => $this->parseRss($root),
                 'feed' => $this->parseAtom($root),
-                default => throw new RuntimeException("Unsupported feed root: {$name}"),
+                default => throw new RuntimeException('Unsupported feed root: ' . $name),
             };
         } finally {
             libxml_clear_errors();

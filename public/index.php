@@ -6,8 +6,8 @@ use Kniebes\SimpleRssReader\Category\CategoryList;
 use Kniebes\SimpleRssReader\Kernel;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
+use Kniebes\SimpleRssReader\Util\Html;
 use Kniebes\SimpleRssReader\Util\Text;
-use Symfony\Component\Dotenv\Dotenv;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -62,16 +62,6 @@ try {
 }
 $totalCount = array_sum(array_map('count', $grouped));
 
-function escape(string $value): string {
-    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
-
-function isSafeUrl(string $url): bool {
-    // Nur absolute http(s)- oder protokoll-relative URLs als Link rendern —
-    // verhindert javascript:/data:-Permalinks aus fremden Feeds.
-    return preg_match('#^(https?://|//)#i', $url) === 1;
-}
-
 ?><!doctype html>
 <html lang="de">
 <head>
@@ -124,13 +114,13 @@ function isSafeUrl(string $url): bool {
 
         <section class="summary">
             <?php foreach ($sections as $section): ?>
-                <a href="#<?= md5($section['title']) ?>"><?= escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></a>
+                <a href="#<?= md5($section['title']) ?>"><?= Html::escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></a>
             <?php endforeach; ?>
         </section>
 
         <?php foreach ($sections as $section): ?>
             <section>
-                <h2 id="<?= md5($section['title']) ?>"><?= escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></h2>
+                <h2 id="<?= md5($section['title']) ?>"><?= Html::escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></h2>
                     <?php foreach ($section['posts'] as $post): ?>
                         <article>
                             <h3 class="<?= $post['status'] === 'new' ? 'new' : '' ?>">
@@ -139,24 +129,29 @@ function isSafeUrl(string $url): bool {
                                     ? $post['title']
                                     : ($post['permalink'] ?? $post['blog_url']);
                                 ?>
-                                <?php if ($post['permalink'] !== null && isSafeUrl($post['permalink'])): ?>
-                                    <a rel="noopener noreferrer" href="<?= escape($post['permalink']) ?>" target="_blank">
-                                        <?= escape($label) ?>
+                                <?php if ($post['permalink'] !== null && Html::isSafeUrl($post['permalink'])): ?>
+                                    <a rel="noopener noreferrer" href="<?= Html::escape($post['permalink']) ?>" target="_blank">
+                                        <?= Html::escape($label) ?>
                                     </a>
                                 <?php else: ?>
-                                    <?= escape($label) ?>
+                                    <?= Html::escape($label) ?>
                                 <?php endif; ?>
                             </h3>
                             <?php $exc = Text::excerpt($post['content'] ?? ''); ?>
                             <?php if ($exc !== ''): ?>
-                                <div class="excerpt"><?= escape($exc) ?></div>
+                                <div class="excerpt"><?= Html::escape($exc) ?></div>
                             <?php endif; ?>
                             <div class="meta">
-                                <?= escape((new DateTimeImmutable($post['date'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Berlin'))->format('Y-m-d H:i')) ?>
+                                <?= Html::escape((new DateTimeImmutable($post['date'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Berlin'))->format('Y-m-d H:i')) ?>
                                 ·
-                                <a rel="noopener noreferrer" href="<?= escape($post['blog_url']) ?>" target="_blank">
-                                    <?= escape(parse_url($post['blog_url'], PHP_URL_HOST) ?? $post['blog_url']) ?>
-                                </a>
+                                <?php $blogHost = parse_url($post['blog_url'], PHP_URL_HOST) ?? $post['blog_url']; ?>
+                                <?php if (Html::isSafeUrl($post['blog_url'])): ?>
+                                    <a rel="noopener noreferrer" href="<?= Html::escape($post['blog_url']) ?>" target="_blank">
+                                        <?= Html::escape($blogHost) ?>
+                                    </a>
+                                <?php else: ?>
+                                    <?= Html::escape($blogHost) ?>
+                                <?php endif; ?>
                                 <?php $fav = !empty($post['is_favorite']); ?>
                                 <button type="button"
                                         class="favorite-toggle<?= $fav ? ' is-favorite' : '' ?>"

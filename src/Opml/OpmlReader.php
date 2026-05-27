@@ -16,12 +16,12 @@ final class OpmlReader
     public function readFeeds(string $opmlPath): array
     {
         if (!is_readable($opmlPath)) {
-            throw new RuntimeException("OPML file not readable: {$opmlPath}");
+            throw new RuntimeException('OPML file not readable: ' . $opmlPath);
         }
 
         $xml = @simplexml_load_file($opmlPath);
         if (!$xml instanceof SimpleXMLElement) {
-            throw new RuntimeException("Failed to parse OPML: {$opmlPath}");
+            throw new RuntimeException('Failed to parse OPML: ' . $opmlPath);
         }
 
         $feeds = [];
