@@ -15,11 +15,27 @@ $projectRoot = dirname(__DIR__);
 
 Kernel::environment();
 
-$repository = new PostRepository(Database::open());
+$renderErrorPage = static function (int $status, string $title, string $message): never {
+    http_response_code($status);
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $safeMessage = htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    echo '<!doctype html><meta charset=utf-8><title>' . $safeTitle . '</title><h1>' . $safeTitle . '</h1><p>' . $safeMessage . '</p><p><a href="/">Zurück</a></p>';
+    exit;
+};
+
+try {
+    $repository = new PostRepository(Database::open());
+} catch (Throwable $e) {
+    $renderErrorPage(503, 'Reader nicht verfügbar', $e->getMessage());
+}
 $categories = CategoryList::fromFile($projectRoot . '/var/categories.md');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'mark_all_read') {
-    $repository->markAllRead();
+    try {
+        $repository->markAllRead();
+    } catch (Throwable $e) {
+        $renderErrorPage(500, 'Markieren fehlgeschlagen', $e->getMessage());
+    }
     header('Location: ' . ($_SERVER['REQUEST_URI'] ?? '/'), true, 303);
     exit;
 }
@@ -39,7 +55,11 @@ $filter = match (true) {
     default            => 'new',
 };
 
-$grouped = $repository->findGroupedByCategory($status, $onlyFavorites);
+try {
+    $grouped = $repository->findGroupedByCategory($status, $onlyFavorites);
+} catch (Throwable $e) {
+    $renderErrorPage(503, 'Reader nicht verfügbar', $e->getMessage());
+}
 $totalCount = array_sum(array_map('count', $grouped));
 
 function escape(string $value): string {

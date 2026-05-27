@@ -22,5 +22,10 @@ $favorite = ($_POST['favorite'] ?? '') === '1';
 
 Kernel::environment();
 
-(new PostRepository(Database::open()))->setFavorite($id, $favorite);
+try {
+    (new PostRepository(Database::open()))->setFavorite($id, $favorite);
+} catch (Throwable $e) {
+    http_response_code(500);
+    exit;
+}
 http_response_code(204);

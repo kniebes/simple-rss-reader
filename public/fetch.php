@@ -43,9 +43,16 @@ Kernel::environment();
 $opmlReader = new OpmlReader();
 $feedParser = new FeedParser();
 $fetcher = new MultiFeedFetcher();
-$repository = new PostRepository(Database::open());
 
-$feeds = $opmlReader->readFeeds($opmlPath);
+try {
+    $repository = new PostRepository(Database::open());
+    $feeds = $opmlReader->readFeeds($opmlPath);
+} catch (Throwable $e) {
+    $tick('[FATAL] init: ' . $e->getMessage() . '<br>');
+    echo '<a href="/">Home</a>';
+    exit;
+}
+
 $total = count($feeds);
 $byUrl = [];
 foreach ($feeds as $feed) {
@@ -53,25 +60,25 @@ foreach ($feeds as $feed) {
 }
 
 $retentionDays = 5;
-$cutoff = new DateTimeImmutable("-{$retentionDays} days");
+$cutoff = new DateTimeImmutable(sprintf('-%d days', $retentionDays));
 
 $done = 0;
 $totalCount = 0;
 
-foreach ($fetcher->fetchAll(array_keys($byUrl)) as [$url, $body, $error]) {
+foreach ($fetcher->fetchAll(array_keys($byUrl)) as $result) {
     $done++;
-    $feed = $byUrl[$url];
+    $feed = $byUrl[$result->url];
     $prefix = sprintf('[%d/%d]', $done, $total);
 
-    if ($body === null) {
-        $tick("{$prefix} [FAIL] {$url}: {$error}<br>");
+    if ($result->body === null) {
+        $tick($prefix . ' [FAIL] ' . $result->url . ': ' . $result->error . '<br>');
         continue;
     }
 
     try {
-        $entries = $feedParser->parse($body);
+        $entries = $feedParser->parse($result->body);
     } catch (Throwable $e) {
-        $tick("{$prefix} [FAIL] {$url}: {$e->getMessage()}<br>");
+        $tick($prefix . ' [FAIL] ' . $result->url . ': ' . $e->getMessage() . '<br>');
         continue;
     }
 
@@ -87,18 +94,26 @@ foreach ($fetcher->fetchAll(array_keys($byUrl)) as [$url, $body, $error]) {
                 $totalCount++;
             }
         } catch (Throwable $e) {
+            $tick($prefix . ' [FAIL] ' . $result->url . ': ' . $e->getMessage() . '<br>');
             // Einzelnes Item überspringen statt den ganzen Lauf abzubrechen —
             // z. B. guid/permalink länger als die Spalte (strict mode wirft).
             $skipped++;
         }
     }
 
-    $note = $skipped > 0 ? " ({$newCount} new, {$skipped} skipped)" : " ({$newCount} new)";
-    $tick("{$prefix} [OK] {$url}{$note}<br>");
+    $note = $skipped > 0
+        ? sprintf(' (%d new, %d skipped)', $newCount, $skipped)
+        : sprintf(' (%d new)', $newCount);
+    $tick($prefix . ' [OK] ' . $result->url . $note . '<br>');
 }
 
 $tick(sprintf('Total New Items: %d<br>', $totalCount));
 
-$deleted = $repository->deleteOlderThanDays($retentionDays);
-$tick(sprintf('Deleted %d posts older than %d days.<br>', $deleted, $retentionDays));
+try {
+    $deleted = $repository->deleteOlderThanDays($retentionDays);
+    $tick(sprintf('Deleted %d posts older than %d days.<br>', $deleted, $retentionDays));
+} catch (Throwable $e) {
+    $tick('[WARN] cleanup failed: ' . $e->getMessage() . '<br>');
+}
+
 echo '<a href="/">Home</a> &mdash; <a href="/categorize.php">Klassifizieren</a>';

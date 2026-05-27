@@ -15,7 +15,7 @@ final class MultiFeedFetcher
 
     /**
      * @param list<string> $urls
-     * @return Generator<int, array{0:string,1:?string,2:?string}>
+     * @return Generator<int, FetchResult>
      */
     public function fetchAll(array $urls): Generator
     {
@@ -80,7 +80,7 @@ final class MultiFeedFetcher
                 curl_multi_remove_handle($mh, $ch);
                 curl_close($ch);
 
-                yield [$url, $body, $error];
+                yield new FetchResult($url, $body, $error);
 
                 $start();
             }

@@ -41,16 +41,25 @@ Kernel::environment();
 $apiKey = (string) ($_ENV['ANTHROPIC_API_KEY'] ?? '');
 if ($apiKey === '') {
     $tick('[FAIL] ANTHROPIC_API_KEY is not set. Hinterlege ihn in .env / .env.local oder als ENV-Variable.<br>');
+    echo '<a href="/">Home</a>';
     exit(1);
 }
 
 $categories = CategoryList::fromFile($projectRoot . '/var/categories.md');
 if ($categories->all() === []) {
     $tick('[FAIL] var/categories.md ist leer oder enthält keine gültigen Einträge.<br>');
+    echo '<a href="/">Home</a>';
     exit(1);
 }
 
-$repository = new PostRepository(Database::open());
+try {
+    $repository = new PostRepository(Database::open());
+} catch (Throwable $e) {
+    $tick('[FATAL] DB connection: ' . $e->getMessage() . '<br>');
+    echo '<a href="/">Home</a>';
+    exit(1);
+}
+
 $classifier = new Classifier(apiKey: $apiKey, categories: $categories);
 
 $batchSize = 25;
@@ -58,7 +67,14 @@ $totalClassified = 0;
 $totalNull = 0;
 
 while (true) {
-    $batch = $repository->findUncategorized(limit: $batchSize);
+    try {
+        $batch = $repository->findUncategorized(limit: $batchSize);
+    } catch (Throwable $e) {
+        $tick('[FATAL] DB read: ' . $e->getMessage() . '<br>');
+        echo '<a href="/">Home</a>';
+        exit(2);
+    }
+
     if ($batch === []) {
         break;
     }
@@ -66,16 +82,23 @@ while (true) {
     try {
         $assignments = $classifier->classify($batch);
     } catch (Throwable $e) {
-        $tick("[FAIL] batch of " . count($batch) . ": {$e->getMessage()}<br>");
+        $tick('[FAIL] batch of ' . count($batch) . ': ' . $e->getMessage() . '<br>');
         // den ersten Post explizit auf NULL bestätigen wäre falsch – wir brechen ab,
         // damit der nächste Lauf den Batch erneut versucht.
+        echo '<a href="/">Home</a>';
         exit(2);
     }
 
     foreach ($batch as $post) {
         $cat = $assignments[$post['id']] ?? null;
-        // leerer String = bewusst klassifiziert ohne Match; verhindert Endlos-Loop bei IS NULL
-        $repository->setCategory(id: $post['id'], category: $cat ?? '');
+        try {
+            // leerer String = bewusst klassifiziert ohne Match; verhindert Endlos-Loop bei IS NULL
+            $repository->setCategory(id: $post['id'], category: $cat ?? '');
+        } catch (Throwable $e) {
+            // Einzelnen Post überspringen, damit der Rest des Batches (bereits per API klassifiziert) nicht verloren geht.
+            $tick('[WARN] post ' . $post['id'] . ': ' . $e->getMessage() . '<br>');
+            continue;
+        }
         if ($cat === null) {
             $totalNull++;
         } else {
