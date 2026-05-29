@@ -165,5 +165,9 @@ $totalCount = array_sum(array_map('count', $grouped));
             </section>
         <?php endforeach; ?>
     <?php endif; ?>
+    <form method="post">
+        <input type="hidden" name="action" value="mark_all_read">
+        <button type="submit">Alle als gelesen markieren</button>
+    </form>
 </body>
 </html>
