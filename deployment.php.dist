@@ -23,7 +23,8 @@ return [
         	/public
         	/src
         	/vendor
-        	/var 
+        	/var
+        	/templates
             .env 
         ',
 

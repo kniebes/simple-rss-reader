@@ -13,7 +13,7 @@ $totalCount = array_sum(array_map(static fn ($section) => count($section['posts'
 <?php else: ?>
     <section class="summary">
         <?php foreach ($sections as $section): ?>
-            <a href="#<?= md5($section['title']) ?>"><?= Html::escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></a>
+            <a class="button" href="#<?= md5($section['title']) ?>"><?= Html::escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></a>
         <?php endforeach; ?>
     </section>
     <?php foreach ($sections as $section): ?>
