@@ -44,6 +44,25 @@ body {
     background-color: var(--bg);
 }
 
+a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+h2 {
+    font-size: 1.3rem;
+    color: var(--text-muted);
+    font-weight: normal;
+    margin: 0 0 1.2rem;
+}
+
+h3 {
+    font-size: 1.4rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin: 0 0 0.8rem;
+}
+
 header {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -77,18 +96,51 @@ header form {
     text-align: right;
 }
 
-h2 {
-    font-size: 1.3rem;
-    color: var(--text-muted);
-    font-weight: normal;
-    margin: 0 0 1.2rem;
+button, .button {
+    background: var(--bg-button);
+    color: #000;
+    border-radius: var(--border-radius);
+    padding: .3rem .5rem;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: .70rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+    font-family: sans-serif;
+    border: 1px solid var(--border-color-button);
 }
 
-h3 {
-    font-size: 1.4rem;
-    color: var(--text-muted);
-    font-weight: 600;
-    margin: 0 0 0.8rem;
+button.active, .button.active {
+    box-shadow: 0 0 5px rgba(0,0,0,.5);
+}
+
+.icon-button {
+    background: var(--bg-button);
+    border: 1px solid var(--border-color-icon-button);
+    padding: 0 .35rem;
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--text-hint);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-button.favorite-toggle:hover,
+.icon-button.favorite-toggle.is-favorite {
+    color: darkorange;
+}
+
+section.summary {
+    display: flex;
+    flex-direction: row;
+    gap: .5rem;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin: 2rem 0;
+    text-align: center;
 }
 
 article {
@@ -99,22 +151,34 @@ article {
     box-shadow: 0 2px 3px rgba(0,0,0,.3);
 }
 
-article.card {
+article.card,
+article.expanded {
     display: grid;
     grid-template-columns: 1fr auto auto;
+    column-gap: .75rem;
+    align-items: center;
+}
+
+article.card {
     grid-template-areas:
         "title    title    title"
         "feed     datetime actions"
         "excerpt  excerpt  excerpt";
-    column-gap: .75rem;
     row-gap: .25rem;
-    align-items: center;
     cursor: pointer;
 }
 
-article.card .title {
+article.expanded {
+    margin: 1.5rem 0;
+    grid-template-areas:
+        "title    title    title"
+        "feed     datetime actions"
+        "content  content  content";
+    row-gap: .35rem;
+}
+
+article .title {
     grid-area: title;
-    font-size: 1.15rem;
     font-weight: 600;
     color: var(--text-muted);
     line-height: 1.35;
@@ -123,33 +187,37 @@ article.card .title {
     text-overflow: ellipsis;
 }
 
+article.card .title    { font-size: 1.15rem; }
+article.expanded .title { font-size: 1.25rem; }
+
 article.card.is-new .title::before {
     content: "• ";
     color: #3c3;
 }
 
-article.card .feed {
-    grid-area: feed;
+article .feed,
+article .datetime {
     font-size: .85rem;
     color: var(--text-hint);
 }
 
-article.card .feed > a {
-    color: var(--text-hint);
+article .feed     { grid-area: feed; }
+article .datetime { grid-area: datetime; }
+
+article .feed > a {
+    color: inherit;
 }
 
-article.card .datetime {
-    grid-area: datetime;
-    font-size: .85rem;
-    color: var(--text-hint);
-}
-
-article.card .actions {
+article .actions {
     grid-area: actions;
     justify-self: end;
     display: flex;
     align-items: center;
     gap: .25rem;
+}
+
+article.expanded .actions {
+    gap: .35rem;
 }
 
 article.card .excerpt {
@@ -161,54 +229,6 @@ article.card .excerpt {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-}
-
-article.expanded {
-    margin: 1.5rem 0;
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    grid-template-areas:
-        "title    title    title"
-        "feed     datetime actions"
-        "content  content  content";
-    column-gap: .75rem;
-    row-gap: .35rem;
-    align-items: center;
-}
-
-article.expanded .title {
-    grid-area: title;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    line-height: 1.35;
-    max-width: 100%;
-    overflow-x: hidden;
-    text-overflow: ellipsis;
-}
-
-article.expanded .feed {
-    grid-area: feed;
-    font-size: .85rem;
-    color: var(--text-hint);
-}
-
-article.expanded .feed > a {
-    color: var(--text-hint);
-}
-
-article.expanded .datetime {
-    grid-area: datetime;
-    font-size: .85rem;
-    color: var(--text-hint);
-}
-
-article.expanded .actions {
-    grid-area: actions;
-    display: flex;
-    align-items: center;
-    gap: .35rem;
-    justify-self: end;
 }
 
 article.expanded .content {
@@ -232,7 +252,6 @@ article.expanded .content ul,
 article.expanded .content ol {
     margin: 0 0 1rem;
     padding-left: 1rem;
-
 }
 
 article.expanded .content a {
@@ -262,59 +281,6 @@ article.expanded .content blockquote {
     color: var(--text-muted);
 }
 
-a {
-    color: var(--link-color);
-    text-decoration: none;
-}
-
-button, .button {
-    background: var(--bg-button);
-    color: #000;
-    border-radius: var(--border-radius);
-    padding: .3rem .5rem;
-    text-decoration: none;
-    cursor: pointer;
-    font-size: .70rem;
-    text-transform: uppercase;
-    white-space: nowrap;
-    font-family: sans-serif;
-    border: 1px solid var(--border-color-button);
-}
-
-button.active, .button.active {
-    box-shadow: 0 0 5px rgba(0,0,0,.5);
-}
-
-section.summary {
-    display: flex;
-    flex-direction: row;
-    gap: .5rem;
-    justify-content: space-around;
-    flex-wrap: wrap;
-    margin: 2rem 0;
-    text-align: center;
-}
-
-.icon-button {
-    background: var(--bg-button);
-    border: 1px solid var(--border-color-icon-button);
-    padding: 0 .35rem;
-    cursor: pointer;
-    font-size: 1.5rem;
-    line-height: 1;
-    color: var(--text-hint);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-
-.icon-button.favorite-toggle:hover,
-.icon-button.favorite-toggle.is-favorite {
-    color: darkorange;
-}
-
 @media (max-width: 1000px) {
     body {
         font-size: 1rem;
@@ -322,7 +288,11 @@ section.summary {
     }
 
     h3 {
-        font-size: 1rem
+        font-size: 1rem;
+    }
+
+    header {
+        margin: .5rem;
     }
 
     article {
@@ -330,12 +300,7 @@ section.summary {
         margin: .2rem 0;
     }
 
-    article.expanded .title,
-    article.card .title {
+    article .title {
         font-size: .9rem;
-    }
-
-    header {
-        margin: .5rem;
     }
 }
