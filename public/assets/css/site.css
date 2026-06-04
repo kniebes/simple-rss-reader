@@ -117,9 +117,9 @@ button.active, .button.active {
 .icon-button {
     background: var(--bg-button);
     border: 1px solid var(--border-color-icon-button);
-    padding: 0 .35rem;
+    padding: .35rem .45rem;
     cursor: pointer;
-    font-size: 1.5rem;
+    font-size: 1rem;
     line-height: 1;
     color: var(--text-hint);
     text-decoration: none;
@@ -250,7 +250,7 @@ article.expanded .content p {
 
 article.expanded .content ul,
 article.expanded .content ol {
-    margin: 0 0 1rem;
+    margin: 0 0 1rem 1rem;
     padding-left: 1rem;
 }
 

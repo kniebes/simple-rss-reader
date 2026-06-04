@@ -5,8 +5,9 @@
  * @var bool $isFavorite
  */
 
+use Kniebes\SimpleRssReader\Util\Icon;
+
 $nextFavorite = $isFavorite ? '0' : '1';
-$glyph        = $isFavorite ? '★' : '☆';
 ?>
 <button type="button"
         class="icon-button favorite-toggle<?= $isFavorite ? ' is-favorite' : '' ?>"
@@ -17,4 +18,4 @@ $glyph        = $isFavorite ? '★' : '☆';
         hx-trigger="click consume"
         aria-pressed="<?= $isFavorite ? 'true' : 'false' ?>"
         aria-label="Favorit"
-        title="Favorit"><?= $glyph ?></button>
+        title="Favorit"><?= Icon::render($isFavorite ? 'star-filled' : 'star-empty') ?></button>
