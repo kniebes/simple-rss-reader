@@ -2,14 +2,17 @@
 
 Minimaler PHP-RSS-Reader. Lädt Feeds aus einer OPML-Datei, speichert Entries in
 MariaDB (DDEV-Container), klassifiziert sie optional per Claude in Kategorien
-und zeigt sie über eine einzelne `index.php` an.
+und zeigt sie server-rendered an. UI mit [htmx](https://htmx.org) (self-hosted,
+kein Node-Build), Templates in `templates/`, dünne Controller in `public/`,
+Geschäftslogik unter `src/`.
 
 Lokal erreichbar unter der DDEV-URL (Default: <https://simple-rss-reader.ddev.site/>).
 
 ## Voraussetzungen
 
 - DDEV (PHP 8.4, apache-fpm, MariaDB 11.8)
-- Composer (über `ddev composer`)
+- Composer (über `ddev composer`) — zieht u. a. `symfony/dotenv` und
+  `ezyang/htmlpurifier` für die HTML-Sanitisierung der Vollansicht
 - `ext-curl` (für parallele Feed-Fetches und die Anthropic-API)
 - `pdo_mysql` (Standard im DDEV-PHP-Image)
 
@@ -104,15 +107,28 @@ und werden in der UI unter „Nicht kategorisiert" gesammelt.
 - `?filter=read` — gelesene Posts
 - `?filter=all` — alle Posts
 - `?filter=favorite` — als Favorit markierte Posts (status-unabhängig)
+- Filter-Wechsel läuft per htmx — kein Full-Reload, URL wird über `hx-push-url`
+  aktualisiert (Browser-Back funktioniert). Bei `HX-Request`-Header liefert
+  `index.php` nur das Listen-Fragment statt der ganzen Seite.
 - Sektionen kommen aus den DB-vorhandenen Kategorien. `categories.md` dient
   nur als Sortier-Hint: bekannte Kategorien erscheinen in der dort
   definierten Reihenfolge, abweichende DB-Kategorien danach alphabetisch.
   „Nicht kategorisiert" (`category` ist `NULL` oder `''`) steht am Ende.
-- Button „Alle als gelesen markieren" setzt jeden `new`-Post auf `read`.
+- Klick auf eine Card öffnet die Vollansicht inline (expandiert den Article
+  in place statt zur Permalink-Seite zu springen). Der vollständige
+  `content:encoded` aus dem Feed wird beim Rendern durch HTMLPurifier
+  sanitisiert (Whitelist in `Html::sanitize()`, Cache unter
+  `var/cache/htmlpurifier/`). Der externe Permalink bleibt als ↗-Button in
+  der Meta-Bar erhalten. Beim Öffnen wird der Post serverseitig auf `read`
+  gesetzt.
+- Der ☆/★-Button toggelt den Favoriten-Status via htmx (`/favorite.php` gibt
+  das neue Button-Fragment zurück). Favoriten überleben die 5-Tage-Retention
+  (`is_favorite = 1` ist vom Retention-DELETE ausgenommen).
+- Der ↺-Button auf gelesenen Cards / in der Vollansicht markiert den Post per
+  `/unread.php` wieder als `new` und rendert die Card frisch.
+- Button „Alle als gelesen markieren" setzt jeden `new`-Post auf `read`
+  (klassischer POST + Redirect, kein htmx).
 - Nav-Link „Fetch" triggert `/fetch.php` direkt aus der UI.
-- Der ☆/★-Button an jedem Post toggelt den Favoriten-Status per Fetch-Request
-  an `/favorite.php` (JS in `public/assets/js/site.js`). Favoriten überleben die
-  5-Tage-Retention (`is_favorite = 1` ist vom Retention-DELETE ausgenommen).
 
 ## DB-Schema
 
@@ -211,9 +227,9 @@ htpasswd -c /absoluter/pfad/zu/.htpasswd deinbenutzer
 - **`categorize.php` bricht bei API-Fehlern hart ab** (`exit 2`), damit der
   nächste Lauf denselben Batch retried. Kein partielles Persistieren mitten im
   Batch.
-- **Anzeigezeit ist hart auf `Europe/Berlin`.** `public/index.php` konvertiert
-  die UTC-DATETIME aus der DB explizit dorthin. Wer in einer anderen TZ
-  rendern will, muss das im Template ändern.
+- **Anzeigezeit ist hart auf `Europe/Berlin`.** `PostRenderer::formatDatetime()`
+  konvertiert die UTC-DATETIME aus der DB explizit dorthin. Wer in einer
+  anderen TZ rendern will, muss das in der Methode ändern.
 - **Browser-Output von `fetch.php`/`categorize.php` ist gestreamt.** HTML-Preamble
   + Padding-Zeilen (4 KB) drücken jede Statusmeldung über die FastCGI-/Browser-
   Puffer-Schwelle, damit Fortschritt live sichtbar ist statt erst am Ende. Apache

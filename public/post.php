@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Kniebes\SimpleRssReader\Kernel;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
-use Kniebes\SimpleRssReader\Util\HtmlSanitizer;
+use Kniebes\SimpleRssReader\Util\Html;
 use Kniebes\SimpleRssReader\Util\PostRenderer;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -31,7 +31,7 @@ try {
     exit;
 }
 
-$sanitized = HtmlSanitizer::safe((string) ($post['content'] ?? ''));
+$sanitized = Html::sanitize((string) ($post['content'] ?? ''));
 
 header('Content-Type: text/html; charset=utf-8');
 echo PostRenderer::renderExpanded($post, $sanitized);
