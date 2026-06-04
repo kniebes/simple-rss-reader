@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @var string $title
+ * @var string $message
+ */
+
+use Kniebes\SimpleRssReader\Util\Html;
+?>
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title><?= Html::escape($title) ?></title>
+</head>
+<body>
+    <h1><?= Html::escape($title) ?></h1>
+    <p><?= Html::escape($message) ?></p>
+    <p><a href="/">Zurück</a></p>
+</body>
+</html>

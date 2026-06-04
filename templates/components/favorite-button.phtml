@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * @var int  $id
+ * @var bool $isFavorite
+ */
+
+$nextFavorite = $isFavorite ? '0' : '1';
+$glyph        = $isFavorite ? '★' : '☆';
+?>
+<button type="button"
+        class="icon-button favorite-toggle<?= $isFavorite ? ' is-favorite' : '' ?>"
+        hx-post="/favorite.php"
+        hx-vals='{"id": "<?= $id ?>", "favorite": "<?= $nextFavorite ?>"}'
+        hx-target="this"
+        hx-swap="outerHTML"
+        hx-trigger="click consume"
+        aria-pressed="<?= $isFavorite ? 'true' : 'false' ?>"
+        aria-label="Favorit"
+        title="Favorit"><?= $glyph ?></button>

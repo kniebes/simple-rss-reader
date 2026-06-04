@@ -1,0 +1,28 @@
+<?php
+
+/** @var array<int, array{title:string, posts:list<array>}> $sections */
+
+use Kniebes\SimpleRssReader\Util\Html;
+use Kniebes\SimpleRssReader\Util\PostRenderer;
+
+$totalCount = array_sum(array_map(static fn ($section) => count($section['posts']), $sections));
+?>
+<div id="post-list">
+<?php if ($totalCount === 0): ?>
+    <p class="empty">Keine Posts.</p>
+<?php else: ?>
+    <section class="summary">
+        <?php foreach ($sections as $section): ?>
+            <a href="#<?= md5($section['title']) ?>"><?= Html::escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></a>
+        <?php endforeach; ?>
+    </section>
+    <?php foreach ($sections as $section): ?>
+        <section>
+            <h2 id="<?= md5($section['title']) ?>"><?= Html::escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></h2>
+            <?php foreach ($section['posts'] as $post): ?>
+                <?= PostRenderer::renderCard($post) ?>
+            <?php endforeach; ?>
+        </section>
+    <?php endforeach; ?>
+<?php endif; ?>
+</div>

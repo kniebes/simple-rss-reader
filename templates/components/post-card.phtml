@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * @var int    $id
+ * @var bool   $isNew
+ * @var string $title
+ * @var string $excerpt
+ * @var string $feedLinkHtml
+ * @var string $datetime
+ * @var string $favoriteButtonHtml
+ * @var string $unreadButtonHtml
+ */
+
+use Kniebes\SimpleRssReader\Util\Html;
+?>
+<article class="card<?= $isNew ? ' is-new' : '' ?>"
+         data-post-id="<?= $id ?>"
+         hx-get="/post.php?id=<?= $id ?>"
+         hx-target="this"
+         hx-swap="outerHTML">
+    <div class="title"><?= Html::escape($title) ?></div>
+    <div class="feed"><?= $feedLinkHtml ?></div>
+    <div class="datetime"><?= Html::escape($datetime) ?></div>
+    <div class="actions">
+        <?php if (!$isNew): ?>
+            <?= $unreadButtonHtml ?>
+        <?php endif; ?>
+        <?= $favoriteButtonHtml ?>
+    </div>
+    <?php if ($excerpt !== ''): ?>
+        <div class="excerpt"><?= Html::escape($excerpt) ?></div>
+    <?php endif; ?>
+</article>
