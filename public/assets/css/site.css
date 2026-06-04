@@ -138,6 +138,7 @@ article.card {
         "excerpt  excerpt  excerpt";
     column-gap: .75rem;
     row-gap: .25rem;
+    align-items: center;
     cursor: pointer;
 }
 
@@ -198,6 +199,7 @@ article.expanded {
         "content  content  content";
     column-gap: .75rem;
     row-gap: .35rem;
+    align-items: center;
 }
 
 article.expanded .title {
@@ -228,27 +230,6 @@ article.expanded .actions {
     justify-self: end;
 }
 
-article.expanded .actions .external {
-    text-decoration: none;
-    color: var(--accent);
-    font-size: 1rem;
-    line-height: 1;
-}
-
-article.expanded .actions .collapse {
-    background: none;
-    border: none;
-    color: var(--text-hint);
-    font-size: 1.1rem;
-    line-height: 1;
-    padding: 0 .25rem;
-    cursor: pointer;
-}
-
-article.expanded .actions .collapse:hover {
-    color: var(--accent);
-}
-
 article.expanded .content {
     grid-area: content;
     padding: .75rem .25rem 0;
@@ -262,6 +243,12 @@ article.expanded .content img {
 
 article.expanded .content p {
     margin: 0 0 1em;
+}
+
+article.expanded .content ul,
+article.expanded .content ol {
+    margin-left: 1rem;
+    padding-left: 1rem;
 }
 
 article.expanded .content a {
@@ -338,38 +325,31 @@ section.summary > a:hover {
     color: var(--accent-hover);
 }
 
-.favorite-toggle {
+.icon-button {
     background: none;
     border: none;
-    padding: 0 .2rem;
-    margin-left: .2rem;
+    padding: 0 .25rem;
     cursor: pointer;
-    font-size: 1rem;
-    color: var(--text-hint);
+    font-size: 2rem;
     line-height: 1;
-    vertical-align: baseline;
-}
-
-.favorite-toggle:hover {
-    color: darkorange;
-}
-
-.favorite-toggle.is-favorite {
-    color: darkorange;
-}
-
-.unread-toggle {
-    background: none;
-    border: none;
-    padding: 0 .2rem;
-    cursor: pointer;
-    font-size: 1rem;
     color: var(--text-hint);
-    line-height: 1;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.unread-toggle:hover {
+.icon-button:hover {
     color: var(--accent);
+}
+
+.icon-button.external {
+    color: var(--accent);
+}
+
+.icon-button.favorite-toggle:hover,
+.icon-button.favorite-toggle.is-favorite {
+    color: darkorange;
 }
 
 @media (max-width: 1000px) {

@@ -46,7 +46,7 @@ final class PostRenderer
     public static function renderUnreadButton(int $id): string
     {
         return '<button type="button"'
-            . ' class="unread-toggle"'
+            . ' class="icon-button unread-toggle"'
             . ' hx-post="/unread.php"'
             . ' hx-vals=\'{"id": "' . $id . '"}\''
             . ' hx-target="closest article"'
@@ -72,14 +72,15 @@ final class PostRenderer
             <div class="feed"><?= self::renderFeedLink($post) ?></div>
             <div class="datetime"><?= self::renderDatetime($post) ?></div>
             <div class="actions">
+                <?= self::renderUnreadButton($id) ?>
                 <?= self::renderFavoriteButton($id, $isFavorite) ?>
                 <?php if ($hasPermalink): ?>
-                    <a class="external" rel="noopener noreferrer" target="_blank"
+                    <a class="icon-button external" rel="noopener noreferrer" target="_blank"
                        href="<?= Html::escape((string) $post['permalink']) ?>"
                        title="Original öffnen">↗</a>
                 <?php endif; ?>
                 <button type="button"
-                        class="collapse"
+                        class="icon-button collapse"
                         hx-get="/post-card.php?id=<?= $id ?>"
                         hx-target="closest article"
                         hx-swap="outerHTML"
@@ -115,7 +116,7 @@ final class PostRenderer
     public static function renderFavoriteButton(int $id, bool $isFavorite): string
     {
         $nextFavorite = $isFavorite ? '0' : '1';
-        $classes = 'favorite-toggle' . ($isFavorite ? ' is-favorite' : '');
+        $classes = 'icon-button favorite-toggle' . ($isFavorite ? ' is-favorite' : '');
         $pressed = $isFavorite ? 'true' : 'false';
         $glyph = $isFavorite ? '★' : '☆';
 
