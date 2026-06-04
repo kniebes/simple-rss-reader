@@ -19,16 +19,21 @@ if ($id <= 0) {
     http_response_code(400);
     exit;
 }
-$favorite = ($_POST['favorite'] ?? '') === '1';
 
 Kernel::environment();
 
 try {
-    (new PostRepository(Database::open()))->setFavorite($id, $favorite);
+    $repository = new PostRepository(Database::open());
+    $repository->markUnread($id);
+    $post = $repository->findById($id);
+    if ($post === null) {
+        http_response_code(404);
+        exit;
+    }
 } catch (Throwable $e) {
     http_response_code(500);
     exit;
 }
 
 header('Content-Type: text/html; charset=utf-8');
-echo PostRenderer::renderFavoriteButton($id, $favorite);
+echo PostRenderer::renderCard($post);

@@ -1,46 +1,37 @@
 :root {
-    --bg: lab(96.6189 0.0403821 7.69081);
-    --bg-article: oklab(0.769 0.064053 0.176752 / 0.05);
-    --bg-button: rgb(200,193,182);
-    --bg-accent-hover: lab(86.254 -0.722647 11.5668);
-    --text: lab(42.4984 -10.3838 9.91943);
-    --text-muted: #6b5840;
+    --bg: #efefef;
+    --bg-article: #fff;
+    --bg-article-unread: #f7fffa;
+    --bg-button: #e0e0e0;
+    --text: #333;
+    --text-muted: #777;
     --text-hint: #8b7355;
-    --accent: lab(47.2709 42.9082 69.2966);
-    --accent-hover: lab(37.8822 37.1699 52.2718);
+    --text-button: #333;
+    --link-color-content: orange;
+    --link-color: green;
     --border-radius: 3px;
+    --border-color-content: #999;
+    --border-color-button: #666;
+    --border-color-icon-button: #aaa;
 }
 
-@font-face {
-    font-family: IBM Plex Mono;
-    src: url(/assets/fonts/IBMPlexMono-Regular.woff2) format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display:swap
-}
-
-@font-face {
-    font-family: IBM Plex Mono;
-    src: url(/assets/fonts/IBMPlexMono-Medium.woff2) format("woff2");
-    font-weight: 500;
-    font-style: normal;
-    font-display:swap
-}
-
-@font-face {
-    font-family: IBM Plex Mono;
-    src: url(/assets/fonts/IBMPlexMono-SemiBold.woff2) format("woff2");
-    font-weight: 600;
-    font-style: normal;
-    font-display:swap
-}
-
-@font-face {
-    font-family: IBM Plex Mono;
-    src: url(/assets/fonts/IBMPlexMono-Bold.woff2) format("woff2");
-    font-weight: 700;
-    font-style: normal;
-    font-display:swap
+@media only screen and (prefers-color-scheme: dark) {
+    :root {
+        --bg: #000;
+        --bg-article: #444;
+        --bg-article-unread: #444844;
+        --bg-button: #444;
+        --text: #eee;
+        --text-muted: #ccc;
+        --text-hint: #bba385;
+        --text-button: #ccc;
+        --link-color-content: orange;
+        --link-color: green;
+        --border-radius: 3px;
+        --border-color-content: #000;
+        --border-color-button: #000;
+        --border-color-icon-button: #000;
+    }
 }
 
 * {
@@ -65,13 +56,32 @@ html {
 }
 
 body {
-    font: 1.1rem/2.0rem IBM Plex Mono, ui-monospace, monospace;
+    font: 1rem/1.7rem "Helvetica Neue", Helvetica, Arial, sans-serif;
     max-width: 54rem;
     margin: 2rem auto;
     padding: 0 1rem;
     line-height: 1.65;
     color: var(--text);
     background-color: var(--bg);
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+h2 {
+    font-size: 1.3rem;
+    color: var(--text-muted);
+    font-weight: normal;
+    margin: 2.5rem 1rem 1rem 1rem;
+}
+
+h3 {
+    font-size: 1.4rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin: 0 0 0.8rem;
 }
 
 header {
@@ -107,63 +117,41 @@ header form {
     text-align: right;
 }
 
-h2 {
-    font-size: 1.3rem;
-    color: var(--text-muted);
-    font-weight: normal;
-    margin: 0 0 1.2rem;
-}
-
-h3 {
-    font-size: 1.4rem;
-    color: var(--text-muted);
-    font-weight: 600;
-    margin: 0 0 0.8rem;
-}
-
-h3.new::before {
-    content: "• ";
-    color: #3c3;
-}
-
-article {
-    margin: 2.5rem 0;
-    padding: 1rem;
-    background-color: var(--bg-article);
-    border-radius: var(--border-radius);
-    box-shadow: 1px 1px 4px rgba(0,0,0,.3);
-}
-
-article h3 a {
-    text-decoration: none;
-}
-
-article h3 a:visited {
-    color: #999;
-}
-
-a {
-    color: var(--accent);
-    text-decoration: none;
-}
-
 button, .button {
-    background: var(--bg-accent-hover);
-    color: #000;
+    background: var(--bg-button);
+    color: var(--text-button);
     border-radius: var(--border-radius);
-    padding: .2rem .4rem;
+    padding: .3rem .5rem;
     text-decoration: none;
     cursor: pointer;
     font-size: .70rem;
     text-transform: uppercase;
     white-space: nowrap;
     font-family: sans-serif;
-    border: 1px solid var(--bg-button);
+    border: 1px solid var(--border-color-button);
 }
 
 button.active, .button.active {
-    border-color: darkorange;
     box-shadow: 0 0 5px rgba(0,0,0,.5);
+}
+
+.icon-button {
+    background: var(--bg-button);
+    border: 1px solid var(--border-color-icon-button);
+    padding: .35rem .45rem;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--text-hint);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-button.favorite-toggle:hover,
+.icon-button.favorite-toggle.is-favorite {
+    color: darkorange;
 }
 
 section.summary {
@@ -176,44 +164,197 @@ section.summary {
     text-align: center;
 }
 
-section.summary > a {
-    display: inline-block;
-    text-decoration: none;
-    padding: 0.1rem .7rem;
+article {
+    margin: .5rem 0;
+    padding: .75rem 1rem;
+    background-color: var(--bg-article);
     border-radius: var(--border-radius);
-    color: var(--accent);
+    box-shadow: 0 2px 3px rgba(0,0,0,.3);
 }
 
-section.summary > a:hover {
-    background-color: var(--bg-accent-hover);
-    color: var(--accent-hover);
+article.card.is-new {
+    background-color: var(--bg-article-unread);
 }
 
-.favorite-toggle {
-    background: none;
-    border: none;
-    padding: 0 .2rem;
-    margin-left: .2rem;
+article.card,
+article.expanded {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    column-gap: .75rem;
+    align-items: center;
+}
+
+article.card {
+    grid-template-areas:
+        "title    title    title"
+        "feed     datetime actions"
+        "excerpt  excerpt  excerpt";
+    row-gap: .25rem;
     cursor: pointer;
-    font-size: 1rem;
+}
+
+article.expanded {
+    margin: 1.5rem 0;
+    grid-template-areas:
+        "title    title    title"
+        "feed     datetime actions"
+        "content  content  content";
+    row-gap: .35rem;
+}
+
+article .title {
+    grid-area: title;
+    font-weight: 600;
+    color: var(--text-muted);
+    line-height: 1.35;
+    max-width: 100%;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+}
+
+article.card .title    { font-size: 1.15rem; }
+article.expanded .title { font-size: 1.25rem; }
+
+article.card.is-new .title::before {
+    content: "• ";
+    color: #3c3;
+}
+
+article .feed,
+article .datetime {
+    font-size: .85rem;
     color: var(--text-hint);
-    line-height: 1;
-    vertical-align: baseline;
 }
 
-.favorite-toggle:hover {
-    color: darkorange;
+article .feed     { grid-area: feed; }
+article .datetime { grid-area: datetime; }
+
+article .feed > a {
+    color: inherit;
 }
 
-.favorite-toggle.is-favorite {
-    color: darkorange;
+article .actions {
+    grid-area: actions;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+}
+
+article.expanded .actions {
+    gap: .35rem;
+}
+
+article.card .excerpt {
+    grid-area: excerpt;
+    font-size: .9rem;
+    line-height: 1.45;
+    color: var(--text-muted);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+article.expanded .content {
+    grid-area: content;
+    margin: 0 -1rem;
+    padding: .75rem 1rem;
+    line-height: 1.55;
+    border-top: 1px solid var(--border-color-content);
+}
+
+article.expanded .content h1,
+article.expanded .content h2,
+article.expanded .content h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin: 0 0 1em;
+}
+
+article.expanded .content img {
+    max-width: 100%;
+    height: auto;
+}
+
+article.expanded .content p {
+    margin: 0 0 1em;
+}
+
+article.expanded .content ul,
+article.expanded .content ol {
+    margin: 0 0 1rem 1rem;
+    padding-left: 1rem;
+}
+
+article.expanded .content a {
+    color: var(--link-color-content);
+    text-decoration: underline;
+}
+
+article.expanded .content pre,
+article.expanded .content code {
+    font-family: monospace, Mono, sans-serif;
+    font-size: .9rem;
+}
+
+article.expanded .content pre {
+    background: rgba(0,0,0,.05);
+    border-radius: var(--border-radius);
+}
+
+article.expanded .content pre {
+    padding: .5rem .75rem;
+    overflow-x: auto;
+}
+
+article.expanded .content code {
+    padding: 0 .25rem;
+}
+
+article.expanded .content blockquote {
+    margin: 0 0 1em;
+    padding-left: 1rem;
+    border-left: 3px solid var(--bg-button);
+    color: var(--text-muted);
 }
 
 @media (max-width: 1000px) {
     body {
         font-size: 1rem;
+        padding: 0;
     }
+
     h3 {
-        font-size: 1rem
+        font-size: 1rem;
+    }
+
+    header {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        grid-template-areas: "headline" "navigation" "options";
+        margin: .5rem;
+    }
+
+    header h1 {
+        margin-bottom: 1rem;
+    }
+
+    header form, header nav {
+        text-align: center;
+        margin-bottom: .7rem;
+    }
+
+    article {
+        border-radius: 0;
+        margin: .2rem 0;
+    }
+
+    article.card .title {
+        font-size: .9rem;
+    }
+    article.expanded .title {
+        font-size: .9rem;
     }
 }

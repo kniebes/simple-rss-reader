@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @var int  $id
+ * @var bool $isFavorite
+ */
+
+use Kniebes\SimpleRssReader\Util\Icon;
+
+$nextFavorite = $isFavorite ? '0' : '1';
+?>
+<button type="button"
+        class="icon-button favorite-toggle<?= $isFavorite ? ' is-favorite' : '' ?>"
+        hx-post="/favorite.php"
+        hx-vals='{"id": "<?= $id ?>", "favorite": "<?= $nextFavorite ?>"}'
+        hx-target="this"
+        hx-swap="outerHTML"
+        hx-trigger="click consume"
+        aria-pressed="<?= $isFavorite ? 'true' : 'false' ?>"
+        aria-label="Favorit"
+        title="Favorit"><?= Icon::render($isFavorite ? 'star-filled' : 'star-empty') ?></button>

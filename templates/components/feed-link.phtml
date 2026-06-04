@@ -1,0 +1,17 @@
+<?php
+
+/**
+ * @var string $blogUrl
+ * @var string $host
+ * @var bool   $isSafe
+ */
+
+use Kniebes\SimpleRssReader\Util\Html;
+?>
+<?php if ($isSafe): ?>
+    <a rel="noopener noreferrer" target="_blank"
+       href="<?= Html::escape($blogUrl) ?>"
+       onclick="event.stopPropagation()"><?= Html::escape($host) ?></a>
+<?php else: ?>
+    <?= Html::escape($host) ?>
+<?php endif; ?>

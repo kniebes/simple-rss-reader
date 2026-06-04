@@ -17,6 +17,7 @@
       "ext-curl": "*",
         "symfony/dotenv": "^8.0",
       "ext-pdo": "*",
-        "dg/ftp-deployment": "^3.7"
+        "dg/ftp-deployment": "^3.7",
+        "ezyang/htmlpurifier": "^4.19"
     }
 }

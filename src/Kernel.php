@@ -18,7 +18,7 @@ final class Kernel
     public static function getFileVersion(): string
     {
         $stamps = 0;
-        foreach (['public/assets/css/site.css', 'public/assets/js/site.js'] as $file) {
+        foreach (['public/assets/css/site.css', 'public/assets/js/site.js', 'public/assets/js/htmx.min.js'] as $file) {
             $filePath = __DIR__ . '/../'. $file;
             if (file_exists($filePath)) {
                 $stamps += filemtime($filePath);

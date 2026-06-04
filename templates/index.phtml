@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * @var string $filter
+ * @var array  $sections
+ */
+
+use Kniebes\SimpleRssReader\Kernel;
+use Kniebes\SimpleRssReader\Util\PostRenderer;
+
+$filters = [
+    'new'      => 'Neu',
+    'read'     => 'Gelesen',
+    'all'      => 'Alle',
+    'favorite' => '★ Favoriten',
+];
+?>
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>Reader</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/site.css?<?= Kernel::getFileVersion() ?>">
+    <script defer src="/assets/js/htmx.min.js?<?= Kernel::getFileVersion() ?>"></script>
+    <script defer src="/assets/js/site.js?<?= Kernel::getFileVersion() ?>"></script>
+</head>
+<body>
+    <header>
+        <h1>Simple Feed Reader</h1>
+        <nav>
+            <?php foreach ($filters as $filterValue => $label): ?>
+                <a class="button filter-link<?= $filter === $filterValue ? ' active' : '' ?>"
+                   href="?filter=<?= $filterValue ?>"
+                   data-filter="<?= $filterValue ?>"
+                   hx-get="?filter=<?= $filterValue ?>"
+                   hx-target="#post-list"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"><?= $label ?></a>
+            <?php endforeach; ?>
+        </nav>
+        <form method="post">
+            <a class="button" href="/fetch.php">Fetch</a>
+            <input type="hidden" name="action" value="mark_all_read">
+            <button type="submit">Alle als gelesen markieren</button>
+        </form>
+    </header>
+
+    <?= PostRenderer::renderList($sections) ?>
+
+    <form method="post">
+        <input type="hidden" name="action" value="mark_all_read">
+        <button type="submit">Alle als gelesen markieren</button>
+    </form>
+</body>
+</html>

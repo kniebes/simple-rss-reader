@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * @var int     $id
+ * @var string  $title
+ * @var string  $feedLinkHtml
+ * @var string  $datetime
+ * @var string  $favoriteButtonHtml
+ * @var string  $unreadButtonHtml
+ * @var ?string $permalink
+ * @var string  $sanitizedContent
+ */
+
+use Kniebes\SimpleRssReader\Util\Html;
+use Kniebes\SimpleRssReader\Util\Icon;
+?>
+<article class="expanded" data-post-id="<?= $id ?>">
+    <div class="title"><?= Html::escape($title) ?></div>
+    <div class="feed"><?= $feedLinkHtml ?></div>
+    <div class="datetime"><?= Html::escape($datetime) ?></div>
+    <div class="actions">
+        <?= $unreadButtonHtml ?>
+        <?= $favoriteButtonHtml ?>
+        <?php if ($permalink !== null): ?>
+            <a class="icon-button external" rel="noopener noreferrer" target="_blank"
+               href="<?= Html::escape($permalink) ?>"
+               title="Original öffnen"><?= Icon::render('external') ?></a>
+        <?php endif; ?>
+        <button type="button"
+                class="icon-button collapse"
+                hx-get="/post-card.php?id=<?= $id ?>"
+                hx-target="closest article"
+                hx-swap="outerHTML"
+                aria-label="Schließen"
+                title="Schließen"><?= Icon::render('close') ?></button>
+    </div>
+    <div class="content"><?= $sanitizedContent ?></div>
+</article>

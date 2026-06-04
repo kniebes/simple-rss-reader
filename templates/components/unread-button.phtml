@@ -1,0 +1,15 @@
+<?php
+
+/** @var int $id */
+
+use Kniebes\SimpleRssReader\Util\Icon;
+?>
+<button type="button"
+        class="icon-button unread-toggle"
+        hx-post="/unread.php"
+        hx-vals='{"id": "<?= $id ?>"}'
+        hx-target="closest article"
+        hx-swap="outerHTML"
+        hx-trigger="click consume"
+        aria-label="Als ungelesen markieren"
+        title="Als ungelesen markieren"><?= Icon::render('unread') ?></button>

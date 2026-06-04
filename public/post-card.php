@@ -9,26 +9,24 @@ use Kniebes\SimpleRssReader\Util\PostRenderer;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    exit;
-}
-
-$id = (int) ($_POST['id'] ?? 0);
+$id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
     http_response_code(400);
     exit;
 }
-$favorite = ($_POST['favorite'] ?? '') === '1';
 
 Kernel::environment();
 
 try {
-    (new PostRepository(Database::open()))->setFavorite($id, $favorite);
+    $post = (new PostRepository(Database::open()))->findById($id);
+    if ($post === null) {
+        http_response_code(404);
+        exit;
+    }
 } catch (Throwable $e) {
     http_response_code(500);
     exit;
 }
 
 header('Content-Type: text/html; charset=utf-8');
-echo PostRenderer::renderFavoriteButton($id, $favorite);
+echo PostRenderer::renderCard($post);
