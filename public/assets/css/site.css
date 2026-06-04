@@ -264,6 +264,14 @@ article.expanded .content {
     border-top: 1px solid var(--border-color-content);
 }
 
+article.expanded .content h1,
+article.expanded .content h2,
+article.expanded .content h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin: 0 0 1em;
+}
+
 article.expanded .content img {
     max-width: 100%;
     height: auto;
@@ -286,6 +294,11 @@ article.expanded .content a {
 
 article.expanded .content pre,
 article.expanded .content code {
+    font-family: monospace, Mono, sans-serif;
+    font-size: .9rem;
+}
+
+article.expanded .content pre {
     background: rgba(0,0,0,.05);
     border-radius: var(--border-radius);
 }
@@ -317,7 +330,20 @@ article.expanded .content blockquote {
     }
 
     header {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        grid-template-areas: "headline" "navigation" "options";
         margin: .5rem;
+    }
+
+    header h1 {
+        margin-bottom: 1rem;
+    }
+
+    header form, header nav {
+        text-align: center;
+        margin-bottom: .7rem;
     }
 
     article {
@@ -325,7 +351,10 @@ article.expanded .content blockquote {
         margin: .2rem 0;
     }
 
-    article .title {
+    article.card .title {
+        font-size: .9rem;
+    }
+    article.expanded .title {
         font-size: .9rem;
     }
 }
