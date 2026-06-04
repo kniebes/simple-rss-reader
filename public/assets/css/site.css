@@ -6,12 +6,32 @@
     --text: #333;
     --text-muted: #777;
     --text-hint: #8b7355;
+    --text-button: #333;
     --link-color-content: orange;
     --link-color: green;
     --border-radius: 3px;
     --border-color-content: #999;
     --border-color-button: #666;
     --border-color-icon-button: #aaa;
+}
+
+@media only screen and (prefers-color-scheme: dark) {
+    :root {
+        --bg: #000;
+        --bg-article: #444;
+        --bg-article-unread: #444844;
+        --bg-button: #444;
+        --text: #eee;
+        --text-muted: #ccc;
+        --text-hint: #bba385;
+        --text-button: #ccc;
+        --link-color-content: orange;
+        --link-color: green;
+        --border-radius: 3px;
+        --border-color-content: #000;
+        --border-color-button: #000;
+        --border-color-icon-button: #000;
+    }
 }
 
 * {
@@ -99,7 +119,7 @@ header form {
 
 button, .button {
     background: var(--bg-button);
-    color: #000;
+    color: var(--text-button);
     border-radius: var(--border-radius);
     padding: .3rem .5rem;
     text-decoration: none;
