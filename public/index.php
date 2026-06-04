@@ -7,7 +7,7 @@ use Kniebes\SimpleRssReader\Kernel;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
 use Kniebes\SimpleRssReader\Util\Html;
-use Kniebes\SimpleRssReader\Util\Text;
+use Kniebes\SimpleRssReader\Util\PostRenderer;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -40,6 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'mark_
     exit;
 }
 
+$isHtmxRequest = ($_SERVER['HTTP_HX_REQUEST'] ?? '') === 'true';
+
 $filter = $_GET['filter'] ?? 'new';
 $onlyFavorites = $filter === 'favorite';
 $status = match ($filter) {
@@ -62,56 +64,32 @@ try {
 }
 $totalCount = array_sum(array_map('count', $grouped));
 
-?><!doctype html>
-<html lang="de">
-<head>
-    <meta charset="utf-8">
-    <title>Reader</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="/assets/css/site.css?<?= Kernel::getFileVersion() ?>">
-    <script defer src="/assets/js/site.js?<?= Kernel::getFileVersion() ?>"></script>
-</head>
-<body>
-    <header>
-        <h1>Simple Feed Reader</h1>
-        <nav>
-            <a class="button<?= $filter === 'new' ? ' active' : '' ?>" href="?filter=new">Neu</a>
-            <a class="button<?= $filter === 'read' ? ' active' : '' ?>" href="?filter=read">Gelesen</a>
-            <a class="button<?= $filter === 'all' ? ' active' : '' ?>" href="?filter=all">Alle</a>
-            <a class="button<?= $filter === 'favorite' ? ' active' : '' ?>" href="?filter=favorite">★ Favoriten</a>
-        </nav>
-        <form method="post">
-            <a class="button" href="/fetch.php">Fetch</a>
-            <input type="hidden" name="action" value="mark_all_read">
-            <button type="submit">Alle als gelesen markieren</button>
-        </form>
-    </header>
+$relevance = array_flip($categories->names());
+$uncategorized = $grouped[''] ?? [];
+$sections = [];
+foreach ($grouped as $name => $posts) {
+    if ($name === '') {
+        continue;
+    }
+    $sections[] = [
+        'title' => $name,
+        'posts' => $posts,
+        'sort'  => $relevance[$name] ?? PHP_INT_MAX,
+    ];
+}
+usort($sections, static fn ($a, $b) => [$a['sort'], $a['title']] <=> [$b['sort'], $b['title']]);
+if ($uncategorized !== []) {
+    $sections[] = ['title' => 'Nicht kategorisiert', 'posts' => $uncategorized, 'sort' => PHP_INT_MAX];
+}
 
-    <?php if ($totalCount === 0): ?>
-        <p class="empty">Keine Posts.</p>
-    <?php else: ?>
-        <?php
-        $relevance = array_flip($categories->names());
-        $uncategorized = $grouped[''] ?? [];
-
-        $sections = [];
-        foreach ($grouped as $name => $posts) {
-            if ($name === '') {
-                continue;
-            }
-            $sections[] = [
-                'title' => $name,
-                'posts' => $posts,
-                'sort'  => $relevance[$name] ?? PHP_INT_MAX,
-            ];
-        }
-        usort($sections, static fn ($a, $b) => [$a['sort'], $a['title']] <=> [$b['sort'], $b['title']]);
-
-        if ($uncategorized !== []) {
-            $sections[] = ['title' => 'Nicht kategorisiert', 'posts' => $uncategorized];
-        }
-        ?>
-
+$renderPostList = static function () use ($sections, $totalCount): void {
+    echo '<div id="post-list">';
+    if ($totalCount === 0) {
+        echo '<p class="empty">Keine Posts.</p>';
+        echo '</div>';
+        return;
+    }
+    ?>
         <section class="summary">
             <?php foreach ($sections as $section): ?>
                 <a href="#<?= md5($section['title']) ?>"><?= Html::escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></a>
@@ -121,50 +99,63 @@ $totalCount = array_sum(array_map('count', $grouped));
         <?php foreach ($sections as $section): ?>
             <section>
                 <h2 id="<?= md5($section['title']) ?>"><?= Html::escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></h2>
-                    <?php foreach ($section['posts'] as $post): ?>
-                        <article>
-                            <h3 class="<?= $post['status'] === 'new' ? 'new' : '' ?>">
-                                <?php
-                                $label = $post['title'] !== ''
-                                    ? $post['title']
-                                    : ($post['permalink'] ?? $post['blog_url']);
-                                ?>
-                                <?php if ($post['permalink'] !== null && Html::isSafeUrl($post['permalink'])): ?>
-                                    <a rel="noopener noreferrer" href="<?= Html::escape($post['permalink']) ?>" target="_blank">
-                                        <?= Html::escape($label) ?>
-                                    </a>
-                                <?php else: ?>
-                                    <?= Html::escape($label) ?>
-                                <?php endif; ?>
-                            </h3>
-                            <?php $exc = Text::excerpt($post['content'] ?? ''); ?>
-                            <?php if ($exc !== ''): ?>
-                                <div class="excerpt"><?= Html::escape($exc) ?></div>
-                            <?php endif; ?>
-                            <div class="meta">
-                                <?= Html::escape((new DateTimeImmutable($post['date'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Europe/Berlin'))->format('Y-m-d H:i')) ?>
-                                ·
-                                <?php $blogHost = parse_url($post['blog_url'], PHP_URL_HOST) ?? $post['blog_url']; ?>
-                                <?php if (Html::isSafeUrl($post['blog_url'])): ?>
-                                    <a rel="noopener noreferrer" href="<?= Html::escape($post['blog_url']) ?>" target="_blank">
-                                        <?= Html::escape($blogHost) ?>
-                                    </a>
-                                <?php else: ?>
-                                    <?= Html::escape($blogHost) ?>
-                                <?php endif; ?>
-                                <?php $fav = !empty($post['is_favorite']); ?>
-                                <button type="button"
-                                        class="favorite-toggle<?= $fav ? ' is-favorite' : '' ?>"
-                                        data-post-id="<?= (int) $post['id'] ?>"
-                                        aria-pressed="<?= $fav ? 'true' : 'false' ?>"
-                                        aria-label="Favorit"
-                                        title="Favorit"><?= $fav ? '★' : '☆' ?></button>
-                            </div>
-                        </article>
-                    <?php endforeach; ?>
+                <?php foreach ($section['posts'] as $post): ?>
+                    <?= PostRenderer::renderCard($post) ?>
+                <?php endforeach; ?>
             </section>
         <?php endforeach; ?>
-    <?php endif; ?>
+    <?php
+    echo '</div>';
+};
+
+if ($isHtmxRequest) {
+    header('Content-Type: text/html; charset=utf-8');
+    $renderPostList();
+    exit;
+}
+
+?><!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>Reader</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/site.css?<?= Kernel::getFileVersion() ?>">
+    <script defer src="/assets/js/htmx.min.js?<?= Kernel::getFileVersion() ?>"></script>
+    <script defer src="/assets/js/site.js?<?= Kernel::getFileVersion() ?>"></script>
+</head>
+<body>
+    <header>
+        <h1>Simple Feed Reader</h1>
+        <nav>
+            <?php
+            $filters = [
+                'new'      => 'Neu',
+                'read'     => 'Gelesen',
+                'all'      => 'Alle',
+                'favorite' => '★ Favoriten',
+            ];
+            foreach ($filters as $filterValue => $label):
+                $isActive = $filter === $filterValue;
+                ?>
+                <a class="button filter-link<?= $isActive ? ' active' : '' ?>"
+                   href="?filter=<?= $filterValue ?>"
+                   data-filter="<?= $filterValue ?>"
+                   hx-get="?filter=<?= $filterValue ?>"
+                   hx-target="#post-list"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"><?= $label ?></a>
+            <?php endforeach; ?>
+        </nav>
+        <form method="post">
+            <a class="button" href="/fetch.php">Fetch</a>
+            <input type="hidden" name="action" value="mark_all_read">
+            <button type="submit">Alle als gelesen markieren</button>
+        </form>
+    </header>
+
+    <?php $renderPostList(); ?>
+
     <form method="post">
         <input type="hidden" name="action" value="mark_all_read">
         <button type="submit">Alle als gelesen markieren</button>

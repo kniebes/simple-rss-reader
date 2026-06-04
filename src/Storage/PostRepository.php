@@ -82,6 +82,30 @@ final class PostRepository
         $stmt->execute([':fav' => $favorite ? 1 : 0, ':id' => $id]);
     }
 
+    public function markRead(int $id): void
+    {
+        $stmt = $this->pdo->prepare("UPDATE simple_rss_reader_posts SET status = 'read' WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+    }
+
+    public function markUnread(int $id): void
+    {
+        $stmt = $this->pdo->prepare("UPDATE simple_rss_reader_posts SET status = 'new' WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+    }
+
+    /**
+     * @return array{id:int,date:string,feed_url:string,blog_url:string,guid:string,permalink:?string,title:string,content:string,status:string,category:?string,is_favorite:int}|null
+     */
+    public function findById(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM simple_rss_reader_posts WHERE id = :id');
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+
+        return $row === false ? null : $row;
+    }
+
     /**
      * @return array<string, list<array{id:int,date:string,feed_url:string,blog_url:string,guid:string,permalink:?string,title:string,content:string,status:string,category:?string,is_favorite:int}>>
      */
