@@ -41,6 +41,7 @@ final class OpmlReader
                 $feeds[] = new Feed(
                     feedUrl: $xmlUrl,
                     blogUrl: (string) ($outline['htmlUrl'] ?? ''),
+                    truncated: ((string) ($outline['truncated'] ?? '')) === 'true',
                 );
             }
             if (isset($outline->outline)) {

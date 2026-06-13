@@ -1,23 +1,34 @@
 {
-    "name": "kniebes/simple-rss-reader",
-    "description": "Simple RSS Reader",
-    "type": "project",
-    "autoload": {
-        "psr-4": {
-            "Kniebes\\SimpleRssReader\\": "src/"
-        }
-    },
-    "authors": [
-        {
-            "name": "Markus Kniebes",
-            "email": "m@kniebes.io"
-        }
-    ],
-    "require": {
-      "ext-curl": "*",
-        "symfony/dotenv": "^8.0",
-      "ext-pdo": "*",
-        "dg/ftp-deployment": "^3.7",
-        "ezyang/htmlpurifier": "^4.19"
+  "name": "kniebes/simple-rss-reader",
+  "description": "Simple RSS Reader",
+  "type": "project",
+  "autoload": {
+    "psr-4": {
+      "Kniebes\\SimpleRssReader\\": "src/"
     }
+  },
+  "authors": [
+    {
+      "name": "Markus Kniebes",
+      "email": "m@kniebes.io"
+    }
+  ],
+  "require": {
+    "ext-curl": "*",
+    "symfony/dotenv": "^8.0",
+    "ext-pdo": "*",
+    "dg/ftp-deployment": "^3.7",
+    "ezyang/htmlpurifier": "^4.19",
+    "j0k3r/graby": "^2.5",
+    "j0k3r/graby-site-config": "^1.0",
+    "guzzlehttp/guzzle": "^7.11",
+    "php-http/guzzle7-adapter": "^1.1",
+    "ext-simplexml": "*",
+    "ext-libxml": "*"
+  },
+  "config": {
+    "allow-plugins": {
+      "php-http/discovery": false
+    }
+  }
 }

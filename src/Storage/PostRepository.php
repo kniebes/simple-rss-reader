@@ -82,6 +82,12 @@ final class PostRepository
         $stmt->execute([':fav' => $favorite ? 1 : 0, ':id' => $id]);
     }
 
+    public function saveFullContent(int $id, string $html): void
+    {
+        $stmt = $this->pdo->prepare('UPDATE simple_rss_reader_posts SET full_content = :html WHERE id = :id');
+        $stmt->execute([':html' => $html, ':id' => $id]);
+    }
+
     public function markRead(int $id): void
     {
         $stmt = $this->pdo->prepare("UPDATE simple_rss_reader_posts SET status = 'read' WHERE id = :id");

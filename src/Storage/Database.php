@@ -11,9 +11,11 @@ final class Database
 {
     public static function open(): PDO
     {
-        $url = (string) ($_ENV['DATABASE_URL'] ?? '');
+        $url = (string)($_ENV['DATABASE_URL'] ?? '');
         if ($url === '') {
-            throw new RuntimeException('DATABASE_URL is not set. Hinterlege ihn in .env / .env.local oder als ENV-Variable.');
+            throw new RuntimeException(
+                'DATABASE_URL is not set. Hinterlege ihn in .env / .env.local oder als ENV-Variable.'
+            );
         }
 
         $parts = parse_url($url);
@@ -22,10 +24,10 @@ final class Database
         }
 
         $host = $parts['host'] ?? 'db';
-        $port = (int) ($parts['port'] ?? 3306);
-        $dbname = ltrim((string) ($parts['path'] ?? ''), '/');
-        $user = rawurldecode((string) ($parts['user'] ?? ''));
-        $pass = rawurldecode((string) ($parts['pass'] ?? ''));
+        $port = (int)($parts['port'] ?? 3306);
+        $dbname = ltrim((string)($parts['path'] ?? ''), '/');
+        $user = rawurldecode((string)($parts['user'] ?? ''));
+        $pass = rawurldecode((string)($parts['pass'] ?? ''));
 
         if ($dbname === '') {
             throw new RuntimeException('DATABASE_URL is missing the database name (path)');

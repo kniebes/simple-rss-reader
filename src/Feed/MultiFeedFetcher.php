@@ -4,88 +4,108 @@ declare(strict_types=1);
 
 namespace Kniebes\SimpleRssReader\Feed;
 
-use Generator;
+use DateTimeImmutable;
+use GuzzleHttp\Pool;
+use Kniebes\SimpleRssReader\Storage\PostRepository;
+use Kniebes\SimpleRssReader\Util\HttpClient;
+use Kniebes\SimpleRssReader\Util\Streaming;
+use Psr\Http\Message\ResponseInterface;
+use Throwable;
 
 final class MultiFeedFetcher
 {
     private const CONCURRENCY = 10;
     private const TIMEOUT = 10;
     private const CONNECT_TIMEOUT = 5;
-    private const USER_AGENT = 'simple-rss-reader/0.1';
 
     /**
      * @param list<string> $urls
-     * @return Generator<int, FetchResult>
+     * @param callable(FetchResult): void $onResult
      */
-    public function fetchAll(array $urls): Generator
+    public function fetchAll(array $urls, callable $onResult): void
     {
-        $mh = curl_multi_init();
-        $queue = array_values($urls);
-        $active = [];
+        $client = HttpClient::create(overrides: [
+            'timeout' => self::TIMEOUT,
+            'connect_timeout' => self::CONNECT_TIMEOUT,
+            'allow_redirects' => ['max' => 3],
+        ]);
 
-        $start = function () use (&$queue, &$active, $mh): void {
-            while (count($active) < self::CONCURRENCY && $queue !== []) {
-                $url = array_shift($queue);
-                $ch = curl_init($url);
-                curl_setopt_array($ch, [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_FOLLOWLOCATION => true,
-                    CURLOPT_MAXREDIRS => 3,
-                    CURLOPT_TIMEOUT => self::TIMEOUT,
-                    CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT,
-                    CURLOPT_USERAGENT => self::USER_AGENT,
-                    CURLOPT_ENCODING => '',
-                ]);
-                curl_multi_add_handle($mh, $ch);
-                $active[(int) $ch] = $url;
+        $requests = static function () use ($client, $urls) {
+            foreach ($urls as $index => $url) {
+                yield $index => static fn() => $client->getAsync($url);
             }
         };
 
-        $start();
+        $pool = new Pool(client: $client, requests: $requests(), config: [
+            'concurrency' => self::CONCURRENCY,
+            'fulfilled' => static function (ResponseInterface $response, int $index) use ($urls, $onResult): void {
+                $url = $urls[$index];
+                $status = $response->getStatusCode();
+                if ($status >= 200 && $status < 300) {
+                    $onResult(new FetchResult($url, (string)$response->getBody(), null));
 
-        $running = 0;
-        while ($active !== []) {
-            do {
-                $status = curl_multi_exec($mh, $running);
-            } while ($status === CURLM_CALL_MULTI_PERFORM);
-
-            if ($status !== CURLM_OK) {
-                break;
-            }
-
-            if ($running > 0 || $queue !== []) {
-                curl_multi_select($mh, 0.5);
-            }
-
-            while (($info = curl_multi_info_read($mh)) !== false) {
-                $ch = $info['handle'];
-                $key = (int) $ch;
-                $url = $active[$key] ?? '';
-                unset($active[$key]);
-
-                $body = null;
-                $error = null;
-
-                if ($info['result'] === CURLE_OK) {
-                    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                    if ($code >= 200 && $code < 300) {
-                        $body = (string) curl_multi_getcontent($ch);
-                    } else {
-                        $error = "HTTP {$code}";
-                    }
-                } else {
-                    $error = curl_strerror($info['result']) ?: 'curl error';
+                    return;
                 }
+                $onResult(new FetchResult($url, null, 'HTTP '.$status));
+            },
+            'rejected' => static function (Throwable $reason, int $index) use ($urls, $onResult): void {
+                $onResult(new FetchResult($urls[$index], null, $reason->getMessage()));
+            },
+        ]);
 
-                curl_multi_remove_handle($mh, $ch);
-                curl_close($ch);
+        $pool->promise()->wait();
+    }
 
-                yield new FetchResult($url, $body, $error);
+    /**
+     * Parst den FetchResult-Body, fügt neue Entries (jünger als $cutoff) ins
+     * Repository ein und tickt eine [OK]/[FAIL]-Zeile über Streaming raus.
+     * Returns die Anzahl der frisch eingefügten Entries.
+     */
+    public static function processResult(
+        FetchResult $result,
+        Feed $feed,
+        FeedParser $feedParser,
+        PostRepository $repository,
+        DateTimeImmutable $cutoff,
+        string $prefix,
+    ): int {
+        if ($result->body === null) {
+            Streaming::tick($prefix.' [FAIL] '.$result->url.': '.$result->error.'<br>');
 
-                $start();
+            return 0;
+        }
+
+        try {
+            $entries = $feedParser->parse($result->body);
+        } catch (Throwable $e) {
+            Streaming::tick($prefix.' [FAIL] '.$result->url.': '.$e->getMessage().'<br>');
+
+            return 0;
+        }
+
+        $newCount = 0;
+        $skipped = 0;
+        foreach ($entries as $entry) {
+            if ($entry->date < $cutoff) {
+                continue;
+            }
+            try {
+                if ($repository->insertIgnore($entry, $feed)) {
+                    $newCount++;
+                }
+            } catch (Throwable $e) {
+                Streaming::tick($prefix.' [FAIL] '.$result->url.': '.$e->getMessage().'<br>');
+                // Einzelnes Item überspringen statt den ganzen Lauf abzubrechen —
+                // z. B. guid/permalink länger als die Spalte (strict mode wirft).
+                $skipped++;
             }
         }
 
-        curl_multi_close($mh);
+        $note = $skipped > 0
+            ? sprintf(' (%d new, %d skipped)', $newCount, $skipped)
+            : sprintf(' (%d new)', $newCount);
+        Streaming::tick($prefix.' [OK] '.$result->url.$note.'<br>');
+
+        return $newCount;
     }
 }

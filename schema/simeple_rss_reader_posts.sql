@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS simeple_rss_reader_posts (
     permalink VARCHAR(2048) NULL,
     title     TEXT          NOT NULL,
     content   MEDIUMTEXT    NOT NULL,
+    full_content MEDIUMTEXT  NULL,
     status    ENUM('new','read') NOT NULL DEFAULT 'new',
     category  VARCHAR(64)   NULL,
     is_favorite TINYINT(1)  NOT NULL DEFAULT 0,

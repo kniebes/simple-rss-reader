@@ -9,56 +9,53 @@ use DateTimeZone;
 
 final class PostRenderer
 {
-    private const TEMPLATE_DIR = __DIR__ . '/../../templates/components';
+    private const TEMPLATE_DIR = __DIR__.'/../../templates/components';
 
     public static function renderCard(array $post): string
     {
-        $id = (int) $post['id'];
+        $id = (int)$post['id'];
         $isFavorite = !empty($post['is_favorite']);
         $isNew = $post['status'] === 'new';
-        $title = $post['title'] !== ''
-            ? $post['title']
-            : ($post['permalink'] ?? $post['blog_url']);
+        $title = $post['title'] !== '' ? $post['title'] : ($post['permalink'] ?? $post['blog_url']);
 
         return self::render('post-card', [
-            'id'                 => $id,
-            'isNew'              => $isNew,
-            'title'              => $title,
-            'excerpt'            => Text::excerpt($post['content'] ?? '', 140),
-            'feedLinkHtml'       => self::renderFeedLink($post),
-            'datetime'           => self::formatDatetime($post['date']),
+            'id' => $id,
+            'isNew' => $isNew,
+            'title' => $title,
+            'excerpt' => Text::excerpt($post['content'] ?? '', 140),
+            'feedLinkHtml' => self::renderFeedLink($post),
+            'datetime' => self::formatDatetime($post['date']),
             'favoriteButtonHtml' => self::renderFavoriteButton($id, $isFavorite),
-            'unreadButtonHtml'   => self::renderUnreadButton($id),
+            'unreadButtonHtml' => self::renderUnreadButton($id),
         ]);
     }
 
     public static function renderExpanded(array $post, string $sanitizedContent): string
     {
-        $id = (int) $post['id'];
+        $id = (int)$post['id'];
         $isFavorite = !empty($post['is_favorite']);
-        $title = $post['title'] !== ''
-            ? $post['title']
-            : ($post['permalink'] ?? $post['blog_url']);
-        $permalink = $post['permalink'] !== null && Html::isSafeUrl((string) $post['permalink'])
-            ? (string) $post['permalink']
+        $title = $post['title'] !== '' ? $post['title'] : ($post['permalink'] ?? $post['blog_url']);
+        $permalink = $post['permalink'] !== null && Html::isSafeUrl((string)$post['permalink'])
+            ? (string)$post['permalink']
             : null;
 
         return self::render('post-expanded', [
-            'id'                 => $id,
-            'title'              => $title,
-            'feedLinkHtml'       => self::renderFeedLink($post),
-            'datetime'           => self::formatDatetime($post['date']),
+            'id' => $id,
+            'title' => $title,
+            'feedLinkHtml' => self::renderFeedLink($post),
+            'datetime' => self::formatDatetime($post['date']),
             'favoriteButtonHtml' => self::renderFavoriteButton($id, $isFavorite),
-            'unreadButtonHtml'   => self::renderUnreadButton($id),
-            'permalink'          => $permalink,
-            'sanitizedContent'   => $sanitizedContent,
+            'unreadButtonHtml' => self::renderUnreadButton($id),
+            'externalLinkHtml' => self::renderExternalLink($permalink),
+            'collapseButtonHtml' => self::renderCollapseButton($id),
+            'sanitizedContent' => $sanitizedContent,
         ]);
     }
 
     public static function renderFavoriteButton(int $id, bool $isFavorite): string
     {
         return self::render('favorite-button', [
-            'id'         => $id,
+            'id' => $id,
             'isFavorite' => $isFavorite,
         ]);
     }
@@ -76,15 +73,26 @@ final class PostRenderer
         return self::render('post-list', ['sections' => $sections]);
     }
 
+    private static function renderExternalLink(?string $permalink = null): string
+    {
+        return self::render('external-link', ['permalink' => $permalink]);
+    }
+
+    private static function renderCollapseButton(int $id): string
+    {
+        return self::render('collapse-button', ['id' => $id]);
+    }
+
     private static function renderFeedLink(array $post): string
     {
-        $blogUrl = (string) $post['blog_url'];
+        $blogUrl = (string)$post['blog_url'];
         $host = parse_url($blogUrl, PHP_URL_HOST) ?? $blogUrl;
 
         return self::render('feed-link', [
             'blogUrl' => $blogUrl,
-            'host'    => $host,
-            'isSafe'  => Html::isSafeUrl($blogUrl),
+            'host' => $host,
+            'isSafe' => Html::isSafeUrl($blogUrl),
+            'isShowLink' => false,
         ]);
     }
 
@@ -99,8 +107,8 @@ final class PostRenderer
     {
         extract($vars, EXTR_SKIP);
         ob_start();
-        require self::TEMPLATE_DIR . '/' . $template . '.phtml';
+        require self::TEMPLATE_DIR.'/'.$template.'.phtml';
 
-        return (string) ob_get_clean();
+        return (string)ob_get_clean();
     }
 }

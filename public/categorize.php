@@ -7,32 +7,11 @@ use Kniebes\SimpleRssReader\Category\Classifier;
 use Kniebes\SimpleRssReader\Kernel;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
+use Kniebes\SimpleRssReader\Util\Streaming;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-set_time_limit(0);
-
-// Streaming-Setup: gzip/deflate aus, alle Puffer-Ebenen schließen, implicit flush an.
-if (function_exists('apache_setenv')) {
-    apache_setenv('no-gzip', '1');
-}
-@ini_set('zlib.output_compression', 'Off');
-header('Content-Encoding: none');
-while (ob_get_level() > 0) {
-    ob_end_flush();
-}
-ob_implicit_flush(true);
-
-// Mini-HTML-Preamble + Padding, damit Firefox/Safari den Render-Threshold (~1 KB) erreichen.
-echo "<!doctype html><meta charset=utf-8><title>categorize</title>\n";
-echo str_repeat(' ', 1024) . "\n";
-flush();
-
-// Apache mod_proxy_fcgi puffert FastCGI-Pakete ohne flushpackets=on;
-// per-line padding drückt jede Zeile über die Puffer-Schwelle und erzwingt Auslieferung.
-$tick = static function (string $line): void {
-    echo $line . str_repeat(' ', 4096) . "\n";
-};
+Streaming::begin(title: 'categorize');
 
 $projectRoot = dirname(__DIR__);
 
@@ -40,7 +19,7 @@ Kernel::environment();
 
 $categories = CategoryList::fromFile($projectRoot . '/var/categories.md');
 if ($categories->all() === []) {
-    $tick('[FAIL] var/categories.md ist leer oder enthält keine gültigen Einträge.<br>');
+    Streaming::tick('[FAIL] var/categories.md ist leer oder enthält keine gültigen Einträge.<br>');
     echo '<a href="/">Home</a>';
     exit(1);
 }
@@ -52,7 +31,7 @@ try {
         categories: $categories,
     );
 } catch (Throwable $e) {
-    $tick('[FATAL] ' . $e->getMessage() . '<br>');
+    Streaming::tick('[FATAL] ' . $e->getMessage() . '<br>');
     echo '<a href="/">Home</a>';
     exit(1);
 }
@@ -65,7 +44,7 @@ while (true) {
     try {
         $batch = $repository->findUncategorized(limit: $batchSize);
     } catch (Throwable $e) {
-        $tick('[FATAL] DB read: ' . $e->getMessage() . '<br>');
+        Streaming::tick('[FATAL] DB read: ' . $e->getMessage() . '<br>');
         echo '<a href="/">Home</a>';
         exit(2);
     }
@@ -77,7 +56,7 @@ while (true) {
     try {
         $assignments = $classifier->classify($batch);
     } catch (Throwable $e) {
-        $tick('[FAIL] batch of ' . count($batch) . ': ' . $e->getMessage() . '<br>');
+        Streaming::tick('[FAIL] batch of ' . count($batch) . ': ' . $e->getMessage() . '<br>');
         // den ersten Post explizit auf NULL bestätigen wäre falsch – wir brechen ab,
         // damit der nächste Lauf den Batch erneut versucht.
         echo '<a href="/">Home</a>';
@@ -91,7 +70,7 @@ while (true) {
             $repository->setCategory(id: $post['id'], category: $cat ?? '');
         } catch (Throwable $e) {
             // Einzelnen Post überspringen, damit der Rest des Batches (bereits per API klassifiziert) nicht verloren geht.
-            $tick('[WARN] post ' . $post['id'] . ': ' . $e->getMessage() . '<br>');
+            Streaming::tick('[WARN] post ' . $post['id'] . ': ' . $e->getMessage() . '<br>');
             continue;
         }
         if ($cat === null) {
@@ -101,8 +80,8 @@ while (true) {
         }
     }
 
-    $tick('[OK] batch of ' . count($batch) . ' classified (running total: ' . $totalClassified . ' matched, ' . $totalNull . ' null)<br>');
+    Streaming::tick('[OK] batch of ' . count($batch) . ' classified (running total: ' . $totalClassified . ' matched, ' . $totalNull . ' null)<br>');
 }
 
-$tick('Done. ' . $totalClassified . ' matched, ' . $totalNull . ' without match.<br>');
+Streaming::tick('Done. ' . $totalClassified . ' matched, ' . $totalNull . ' without match.<br>');
 echo '<a href="/">Home</a>';

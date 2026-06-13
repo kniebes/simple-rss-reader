@@ -4,11 +4,12 @@
  * @var string $blogUrl
  * @var string $host
  * @var bool   $isSafe
+ * @var bool   $isShowLink
  */
 
 use Kniebes\SimpleRssReader\Util\Html;
 ?>
-<?php if ($isSafe): ?>
+<?php if ($isSafe && $isShowLink): ?>
     <a rel="noopener noreferrer" target="_blank"
        href="<?= Html::escape($blogUrl) ?>"
        onclick="event.stopPropagation()"><?= Html::escape($host) ?></a>

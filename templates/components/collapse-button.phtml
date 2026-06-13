@@ -1,0 +1,18 @@
+<?php
+
+/**
+ * @var int $id
+ */
+
+use Kniebes\SimpleRssReader\Util\Icon;
+
+?>
+<button type="button"
+        class="icon-button collapse"
+        hx-get="/post-card.php?id=<?= $id ?>"
+        hx-target="closest article"
+        hx-swap="outerHTML"
+        aria-label="Schließen"
+        title="Schließen">
+    <?= Icon::render('close') ?>
+</button>

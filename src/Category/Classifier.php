@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kniebes\SimpleRssReader\Category;
 
+use GuzzleHttp\Exception\TransferException;
+use Kniebes\SimpleRssReader\Util\HttpClient;
 use Kniebes\SimpleRssReader\Util\Text;
 use RuntimeException;
 
@@ -128,27 +130,24 @@ final class Classifier
      */
     private function postJson(array $payload): array
     {
-        $ch = curl_init(self::API_URL);
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 60,
-            CURLOPT_HTTPHEADER => [
-                'x-api-key: ' . $this->apiKey,
-                'anthropic-version: ' . self::API_VERSION,
-                'content-type: application/json',
-            ],
-            CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        ]);
+        $client = HttpClient::create(overrides: ['timeout' => 60]);
 
-        $body = curl_exec($ch);
-        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err = curl_error($ch);
-        curl_close($ch);
-
-        if ($body === false) {
-            throw new RuntimeException('Anthropic API request failed: ' . $err);
+        try {
+            $response = $client->post(uri: self::API_URL, options: [
+                'headers' => [
+                    'x-api-key' => $this->apiKey,
+                    'anthropic-version' => self::API_VERSION,
+                    'content-type' => 'application/json',
+                ],
+                'body' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            ]);
+        } catch (TransferException $e) {
+            throw new RuntimeException('Anthropic API request failed: ' . $e->getMessage(), previous: $e);
         }
+
+        $status = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
         if ($status < 200 || $status >= 300) {
             throw new RuntimeException('Anthropic API HTTP ' . $status . ': ' . substr($body, 0, 500));
         }

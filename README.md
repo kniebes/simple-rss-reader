@@ -11,9 +11,12 @@ Lokal erreichbar unter der DDEV-URL (Default: <https://simple-rss-reader.ddev.si
 ## Voraussetzungen
 
 - DDEV (PHP 8.4, apache-fpm, MariaDB 11.8)
-- Composer (über `ddev composer`) — zieht u. a. `symfony/dotenv` und
-  `ezyang/htmlpurifier` für die HTML-Sanitisierung der Vollansicht
+- Composer (über `ddev composer`) — zieht u. a. `symfony/dotenv`,
+  `ezyang/htmlpurifier` für die HTML-Sanitisierung und `j0k3r/graby` fürs
+  Nachladen von Volltexten bei verstümmelten Feeds
 - `ext-curl` (für parallele Feed-Fetches und die Anthropic-API)
+- `ext-tidy` (von graby vorausgesetzt — in DDEV via `webimage_extra_packages`
+  in `.ddev/config.yaml` aktiviert; auf Prod-Hosts üblicherweise schon dabei)
 - `pdo_mysql` (Standard im DDEV-PHP-Image)
 
 ## Setup
@@ -121,6 +124,20 @@ und werden in der UI unter „Nicht kategorisiert" gesammelt.
   `var/cache/htmlpurifier/`). Der externe Permalink bleibt als ↗-Button in
   der Meta-Bar erhalten. Beim Öffnen wird der Post serverseitig auf `read`
   gesetzt.
+- **Volltext-Nachladen bei verstümmelten Feeds.** Outlines im OPML können mit
+  `truncated="true"` markiert werden:
+  ```xml
+  <outline … xmlUrl="https://www.tagesschau.de/index~rss2.xml" truncated="true"/>
+  ```
+  Beim ersten Öffnen so eines Posts holt `post.php` die Permalink-Seite über
+  [graby](https://github.com/j0k3r/graby) (Readability + ~1500 site-spezifische
+  Extraktionsregeln aus `j0k3r/graby-site-config`), persistiert das Ergebnis in
+  `full_content` und rendert es. Folge-Klicks gehen direkt aus der DB. Während
+  der ~0,3–1 s Roundtrip läuft am oberen Rand der Card ein animierter
+  Loading-Strip (htmx setzt `.htmx-request` auf den Trigger, CSS macht den
+  Rest). Schlägt die Extraktion fehl (Timeout, HTTP-Fehler, leeres Ergebnis),
+  wird der Original-Feed-Content gerendert und oben eine kleine rote
+  `.notice`-Box mit der Fehlermeldung eingeblendet.
 - Der ☆/★-Button toggelt den Favoriten-Status via htmx (`/favorite.php` gibt
   das neue Button-Fragment zurück). Favoriten überleben die 5-Tage-Retention
   (`is_favorite = 1` ist vom Retention-DELETE ausgenommen).
@@ -144,6 +161,8 @@ CREATE TABLE simple_rss_reader_posts (
                                                        -- keinen Link liefert (z. B. rss-club)
     title     TEXT          NOT NULL,
     content   MEDIUMTEXT    NOT NULL,
+    full_content MEDIUMTEXT  NULL,                       -- nachgeladener Volltext für truncated-Feeds,
+                                                          -- NULL solange noch nicht abgerufen
     status    ENUM('new','read') NOT NULL DEFAULT 'new',
     category  VARCHAR(64)   NULL,                      -- NULL = noch nicht klassifiziert,
                                                        -- '' = klassifiziert ohne Match

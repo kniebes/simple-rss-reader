@@ -17,7 +17,7 @@ $totalCount = array_sum(array_map(static fn ($section) => count($section['posts'
         <?php endforeach; ?>
     </section>
     <?php foreach ($sections as $section): ?>
-        <section>
+        <section class="article-list">
             <h2 id="<?= md5($section['title']) ?>"><?= Html::escape($section['title']) ?> <span class="count">(<?= count($section['posts']) ?>)</span></h2>
             <?php foreach ($section['posts'] as $post): ?>
                 <?= PostRenderer::renderCard($post) ?>

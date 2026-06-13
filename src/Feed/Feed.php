@@ -9,6 +9,7 @@ final readonly class Feed
     public function __construct(
         public string $feedUrl,
         public string $blogUrl,
+        public bool $truncated = false,
     ) {
     }
 }

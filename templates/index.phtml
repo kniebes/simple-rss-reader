@@ -48,9 +48,11 @@ $filters = [
 
     <?= PostRenderer::renderList($sections) ?>
 
-    <form method="post">
-        <input type="hidden" name="action" value="mark_all_read">
-        <button type="submit">Alle als gelesen markieren</button>
-    </form>
+    <footer>
+        <form method="post">
+            <input type="hidden" name="action" value="mark_all_read">
+            <button type="submit">Alle als gelesen markieren</button>
+        </form>
+    </footer>
 </body>
 </html>
