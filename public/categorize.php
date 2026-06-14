@@ -7,15 +7,17 @@ use Kniebes\SimpleRssReader\Category\Classifier;
 use Kniebes\SimpleRssReader\Kernel;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
+use Kniebes\SimpleRssReader\Util\Auth;
 use Kniebes\SimpleRssReader\Util\Streaming;
 
 require __DIR__ . '/../vendor/autoload.php';
 
+Kernel::environment();
+Auth::requireLogin();
+
 Streaming::begin(title: 'categorize');
 
 $projectRoot = dirname(__DIR__);
-
-Kernel::environment();
 
 $categories = CategoryList::fromFile($projectRoot . '/var/categories.md');
 if ($categories->all() === []) {

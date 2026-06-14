@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Kniebes\SimpleRssReader\Kernel;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
+use Kniebes\SimpleRssReader\Util\Auth;
 use Kniebes\SimpleRssReader\Util\PostRenderer;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -16,6 +17,7 @@ if ($id <= 0) {
 }
 
 Kernel::environment();
+Auth::requireLogin();
 
 try {
     $post = (new PostRepository(Database::open()))->findById($id);

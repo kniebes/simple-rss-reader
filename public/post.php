@@ -6,6 +6,7 @@ use Kniebes\SimpleRssReader\Kernel;
 use Kniebes\SimpleRssReader\Opml\OpmlReader;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
+use Kniebes\SimpleRssReader\Util\Auth;
 use Kniebes\SimpleRssReader\Util\FullContentExtractor;
 use Kniebes\SimpleRssReader\Util\Html;
 use Kniebes\SimpleRssReader\Util\PostRenderer;
@@ -19,6 +20,7 @@ if ($id <= 0) {
 }
 
 Kernel::environment();
+Auth::requireLogin();
 
 try {
     $repository = new PostRepository(Database::open());

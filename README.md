@@ -42,12 +42,17 @@ Kategorien werden aus `var/categories.md` gelesen (Format pro Zeile:
 `- Name: Beschreibung`). Die Beschreibung geht 1:1 in den System-Prompt des
 Classifiers und entscheidet, was in eine Kategorie fällt.
 
-In `.env` (gitignored) sind zwei Variablen erforderlich:
+In `.env` (gitignored) liegen die Konfigurationswerte:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 DATABASE_URL="mysql://db:db@db:3306/db"
+AUTH_PASSWORD_HASH=JDJ5JDEy...        # base64-kodierter bcrypt-Hash
+AUTH_SECRET=b4ee8b84...               # Zufalls-Secret zum Signieren des Cookies
 ```
+
+`AUTH_PASSWORD_HASH` und `AUTH_SECRET` steuern den eingebauten Cookie-Login
+(siehe [Sicherheit](#sicherheit)) — ohne beide kommt niemand rein.
 
 Den `ANTHROPIC_API_KEY` gibt es **nicht** in den Einstellungen der Claude-Chat-App
 (claude.ai) — die API ist ein eigenes, davon getrenntes Produkt mit eigener,
@@ -146,6 +151,8 @@ und werden in der UI unter „Nicht kategorisiert" gesammelt.
 - Button „Alle als gelesen markieren" setzt jeden `new`-Post auf `read`
   (klassischer POST + Redirect, kein htmx).
 - Nav-Link „Fetch" triggert `/fetch.php` direkt aus der UI.
+- Nav-Link „Logout" löscht den Login-Cookie (`/logout.php`) und führt zurück
+  zur Login-Seite.
 
 ## DB-Schema
 
@@ -207,29 +214,46 @@ vendor/bin/deployment deployment.php
 
 ## Sicherheit
 
-**Die App bringt keine eigene Authentifizierung mit — alle Endpoints sind
-offen.** Bei jeder öffentlich erreichbaren Installation gehört davor ein
-Zugriffsschutz, z. B. HTTP Basic Auth. Sonst kann jeder Besucher die
-Endpoints triggern, und besonders `categorize.php` ruft die Anthropic-API auf
-und verursacht damit **echte Kosten** (dein API-Guthaben) — ein offener
-`categorize.php`-Endpoint ist effektiv ein Geld-Leck. Auch `fetch.php`
-schreibt in die DB und löscht alte Posts.
+Die App bringt einen **eingebauten Cookie-Login** mit (Single-User). Jeder
+web-erreichbare Endpoint ruft am Anfang `Auth::requireLogin()` auf
+(`src/Util/Auth.php`) und leitet ohne gültigen Cookie auf `/login.php` um.
+Das ist wichtig, weil besonders `categorize.php` die Anthropic-API aufruft und
+damit **echte Kosten** verursacht (dein API-Guthaben) — und `fetch.php` in die
+DB schreibt und alte Posts löscht.
 
-Auf Apache reicht eine `.htaccess` im Document-Root (`public/`):
+**Wie es funktioniert:**
 
-```apacheconf
-AuthType Basic
-AuthName "Restricted"
-AuthUserFile /absoluter/pfad/zu/.htpasswd
-Require valid-user
-```
+- Passwort wird als bcrypt-Hash geprüft (`password_verify`); der Hash liegt
+  **base64-kodiert** in `AUTH_PASSWORD_HASH`. Base64 vermeidet, dass das `$` im
+  bcrypt-Hash von `symfony/dotenv` als Variable expandiert wird — so ist das
+  Quoting in der `.env` egal.
+- Nach erfolgreichem Login setzt `login.php` einen signierten Cookie `srr_auth`
+  (`<expiry>:<HMAC-SHA256>`, signiert mit `AUTH_SECRET`). Kein Server-State,
+  keine Session, keine DB — die Gültigkeit steckt komplett in der Signatur.
+- Cookie-Attribute: `Secure`, `HttpOnly`, `SameSite=Lax`, Lebensdauer 1 Jahr
+  (per `AUTH_COOKIE_LIFETIME` änderbar). Bewusst ein server-gesetzter Cookie:
+  iOS-Safari persistiert die zuverlässig (anders als Basic-Auth-Credentials,
+  und nicht betroffen von ITPs 7-Tage-Cap, der nur per JS gesetzte Cookies
+  trifft).
+- **CLI-Aufrufe sind ausgenommen** (`PHP_SAPI === 'cli'`): `fetch.php` und
+  `categorize.php` laufen per Cron / `ddev exec` ohne Login weiter, nur der
+  Browser-Zugriff verlangt ihn.
 
-Die `.htpasswd` daneben anlegen (außerhalb des Document-Roots ablegen, wenn
-möglich):
+**Einrichtung** — beide Werte in die `.env` eintragen:
 
 ```sh
-htpasswd -c /absoluter/pfad/zu/.htpasswd deinbenutzer
+# bcrypt-Hash (base64-kodiert) aus deinem Passwort erzeugen:
+ddev exec php -r 'echo base64_encode(password_hash("DEINPASSWORT", PASSWORD_DEFAULT)), "\n";'
+# Secret zum Signieren des Cookies:
+ddev exec php -r 'echo bin2hex(random_bytes(32)), "\n";'
 ```
+
+Sind `AUTH_PASSWORD_HASH` oder `AUTH_SECRET` leer, ist der Login **fail closed**
+— es kommt niemand rein.
+
+Auf Prod werden beide Werte in die dortige `.env` eingetragen (wird nicht mit
+deployt). Eine separate HTTP-Basic-Auth (`.htaccess`) ist damit nicht mehr
+nötig und sollte entfernt werden — sonst greifen beide Schichten gleichzeitig.
 
 ## Caveats
 

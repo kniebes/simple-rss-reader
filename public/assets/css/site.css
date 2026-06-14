@@ -7,7 +7,7 @@
     --text-muted: #777;
     --text-hint: #8b7355;
     --text-button: #333;
-    --link-color-content: orange;
+    --link-color-content: darkorange;
     --link-color: green;
     --border-radius: 3px;
     --border-radius-article: 20px;
@@ -406,4 +406,39 @@ article.expanded .content blockquote {
     footer {
         margin: 1rem;
     }
+}
+
+.login {
+    max-width: 20rem;
+    margin: 4rem auto;
+    padding: 0 1rem;
+    text-align: center;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    align-items: stretch;
+    text-align: left;
+}
+
+.login-form label {
+    font-size: .8rem;
+    color: var(--text-muted);
+}
+
+.login-form input[type="password"] {
+    padding: .5rem;
+    font-size: 1rem;
+    border: 1px solid var(--border-color-button);
+    border-radius: var(--border-radius);
+    background: var(--bg-article);
+    color: var(--text);
+}
+
+.login-error {
+    color: var(--border-color-error);
+    font-size: .8rem;
+    margin: 0;
 }

@@ -24,7 +24,8 @@
     "guzzlehttp/guzzle": "^7.11",
     "php-http/guzzle7-adapter": "^1.1",
     "ext-simplexml": "*",
-    "ext-libxml": "*"
+    "ext-libxml": "*",
+    "ext-ctype": "*"
   },
   "config": {
     "allow-plugins": {

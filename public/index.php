@@ -6,6 +6,7 @@ use Kniebes\SimpleRssReader\Category\CategoryList;
 use Kniebes\SimpleRssReader\Kernel;
 use Kniebes\SimpleRssReader\Storage\Database;
 use Kniebes\SimpleRssReader\Storage\PostRepository;
+use Kniebes\SimpleRssReader\Util\Auth;
 use Kniebes\SimpleRssReader\Util\Error;
 use Kniebes\SimpleRssReader\Util\PostRenderer;
 
@@ -14,6 +15,7 @@ require __DIR__ . '/../vendor/autoload.php';
 $projectRoot = dirname(__DIR__);
 
 Kernel::environment();
+Auth::requireLogin();
 
 try {
     $repository = new PostRepository(Database::open());
